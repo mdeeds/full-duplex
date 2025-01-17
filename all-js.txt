@@ -1,0 +1,725 @@
+```js audio.js
+class AudioManager {
+    constructor() {
+	this.audioCtx = null;
+	this.localOutputNode = null;
+	this.localInputNode = null;
+
+	this.rawInputSource = null;
+	this.inputDevices = [];
+	this.outputDevices = [];
+    }
+
+    ctx() {
+	return this.audioCtx;
+    }
+
+    async initialize() {
+	this.audioCtx = new AudioContext();
+	this.localOutputNode = this.audioCtx.createGain();
+	this.localInputNode = this.audioCtx.createGain();
+
+
+	new VUMeter(this.localInputNode, document.body, 'mic');
+	this.localOutputVU = new VUMeter(this.localOutputNode, document.body, 'speakers');
+	this.localOutputNode.connect(this.audioCtx.destination);
+
+	await this.enumerateDevices();
+    }
+
+    async changeAudioInput(deviceId) {
+	const stream = await navigator.mediaDevices.getUserMedia({
+	    audio: {
+		deviceId: deviceId,
+		echoCancellation: false,
+		noiseSuppression: false,
+		autoGainControl: false,
+		latencyHint: 'low',
+	    },
+	});
+	if (!!this.rawInputSource) {
+	    this.rawInputSource.disconnect();
+	}
+	this.rawInputSource = this.audioCtx.createMediaStreamSource(stream);
+
+	// new VUMeter(this.rawInputSource, document.body);
+
+	
+	this.rawInputSource.connect(this.localInputNode);
+	console.log(`Input device changed to ${deviceId}`);
+	this.selectedInputDevice = deviceId;
+	return;  // Explicit return so that `await` works.
+    }
+
+    async changeAudioOutput(deviceId) {
+	if (!this.audioCtx || !this.localOutputNode) {
+	    console.error("AudioContext or localOutputNode not initialized.");
+	    return;
+	}
+
+	await this.audioCtx.setSinkId(deviceId);
+	console.log(`Output device changed to: ${deviceId}`);
+	return;  // Explicit return so that `await` works.
+    }
+
+    async enumerateDevices() {
+	console.log('Scanning...');
+	const devices = await navigator.mediaDevices.enumerateDevices();
+	console.log('Enumerating...');
+	const inputDevices = devices.filter(
+	    device => device.kind === 'audioinput');
+	const outputDevices = devices.filter(
+	    device => device.kind === 'audiooutput' &&
+		device.deviceId !== 'default');
+	this.inputDevices = inputDevices;
+	this.outputDevices = outputDevices;
+
+	console.log(`Inputs: ${inputDevices.length};`);
+	console.log(`Outputs: ${outputDevices.length}`);
+    }
+
+    inputSelector(div) {
+	const inputList = document.createElement('div');
+	inputList.innerHTML = "<H1>Inputs</H1>";
+	div.appendChild(inputList);
+	for (const device of this.inputDevices) {
+	    const radio = document.createElement('input');
+	    radio.type = 'radio';
+	    radio.name = 'inputDevice';
+	    radio.value = device.deviceId;
+	    radio.id = `inputDevice_${device.deviceId}`;
+	    const label = document.createElement('label');
+	    label.htmlFor = `inputDevice_${device.deviceId}`;
+	    label.textContent = device.label || device.deviceId;
+	    inputList.appendChild(radio);
+	    inputList.appendChild(label);
+	    inputList.appendChild(document.createElement('br'));
+	    radio.addEventListener('change', async() => {
+		console.log(`Value: ${radio.value}`);
+		await this.changeAudioInput(radio.value);
+	    });
+	}
+    }
+
+    outputSelector(div) {
+	const outputList = document.createElement('div');
+	outputList.innerHTML = "<H2>Outputs</H2>"
+	div.appendChild(outputList);
+	for (const device of this.outputDevices) {
+	    const radio = document.createElement('input');
+	    radio.type = 'radio';
+	    radio.name = 'outputDevice';
+	    radio.value = device.deviceId;
+	    radio.id = `outputDevice_${device.deviceId}`;
+	    const label = document.createElement('label');
+	    label.htmlFor = `outputDevice_${device.deviceId}`;
+	    label.textContent = device.label || device.deviceId;
+	    outputList.appendChild(radio);
+	    outputList.appendChild(label);
+	    outputList.appendChild(document.createElement('br'));
+	    radio.addEventListener('change', async() => {
+		console.log(`Value: ${radio.value}`);
+		await this.changeAudioOutput(radio.value);
+	    });
+	}
+    }
+}
+
+class GainController {
+    constructor(inputNode, outputNode, inputPeerNode, outputPeerNode, parentDiv) {
+        this.inputNode = inputNode;
+        this.outputNode = outputNode;
+        this.inputPeerNode = inputPeerNode;
+        this.outputPeerNode = outputPeerNode;
+        this.parentDiv = parentDiv;
+        this.audioContext = inputNode.context;
+
+	this.parentDiv.innerHTML = "<H1>Monitoring</H1>";
+
+        this.inputToOutputGain = this.audioContext.createGain();
+        this.inputToPeerOutputGain = this.audioContext.createGain();
+        this.peerInputToOutputGain = this.audioContext.createGain();
+        this.peerInputToPeerOutputGain = this.audioContext.createGain();
+
+        this.inputNode.connect(this.inputToOutputGain);
+        this.inputToOutputGain.connect(this.outputNode);
+
+        this.inputNode.connect(this.inputToPeerOutputGain);
+        this.inputToPeerOutputGain.connect(this.outputPeerNode);
+
+        this.inputPeerNode.connect(this.peerInputToOutputGain);
+        this.peerInputToOutputGain.connect(this.outputNode);
+
+        this.inputPeerNode.connect(this.peerInputToPeerOutputGain);
+        this.peerInputToPeerOutputGain.connect(this.outputPeerNode);
+
+        this._createSlider("Input to Output Gain",
+			   this.inputToOutputGain, -30);
+        this._createSlider("Input to Peer Output Gain",
+			   this.inputToPeerOutputGain, 0);
+        this._createSlider("Peer Input to Output Gain",
+			   this.peerInputToOutputGain, 0);
+        this._createSlider("Peer Input to Peer Output Gain",
+			   this.peerInputToPeerOutputGain, -30);
+
+	new VUMeter(this.outputPeerNode, document.body, 'send');
+	new VUMeter(this.inputPeerNode, document.body, 'recieve');
+    }
+
+    dbToGain(x) {
+        return x <= -30 ?
+	    0 : Math.pow(10, x / 20);
+    }
+    
+    _createSlider(labelText, gainNode, initialValue = 0) {
+        const container = document.createElement('div');
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = -30;
+        slider.max = 10;
+        slider.step = 1;
+        slider.value = initialValue;
+	gainNode.gain.value = this.dbToGain(initialValue);
+	
+        slider.addEventListener('input', () => {
+            const gainValue = parseFloat(slider.value);
+            gainNode.gain.value = this.dbToGain(gainValue);
+        });
+
+        container.appendChild(label);
+        container.appendChild(slider);
+        this.parentDiv.appendChild(container);
+    }
+}
+
+class VUMeter {
+    constructor(audioNode, parentDiv, labelText) {
+        this.audioNode = audioNode;
+        this.parentDiv = parentDiv;
+        this._analyser = audioNode.context.createAnalyser();
+        this.audioNode.connect(this._analyser);
+        this._analyser.fftSize = 2048;
+        this.dataArray = new Uint8Array(this._analyser.frequencyBinCount);
+
+        this.containerDiv = document.createElement('div');
+
+        this.labelElement = document.createElement('span');
+        this.labelElement.textContent = labelText + ': ';
+        this.containerDiv.appendChild(this.labelElement);
+
+        this.vuMeterElement = document.createElement('div');
+        this.vuMeterElement.style.width = '0%';
+        this.vuMeterElement.style.height = '10px';
+        this.vuMeterElement.style.backgroundColor = 'green';
+        this.containerDiv.appendChild(this.vuMeterElement);
+
+        this.parentDiv.appendChild(this.containerDiv);
+
+        this._tick = this._tick.bind(this);
+        this._tick();
+    }
+
+    analyser() {
+	return this._analyser;
+    }
+
+    _tick() {
+        this._analyser.getByteFrequencyData(this.dataArray);
+        let maxValue = 0;
+        for (let i = 0; i < this.dataArray.length; i++) {
+            maxValue = Math.max(maxValue, this.dataArray[i]);
+        }
+        this.vuMeterElement.style.width = `${0.1 + maxValue / 2.55}%`; // Scale to 0-100%
+        requestAnimationFrame(this._tick);
+    }
+}
+
+```
+
+```js index.js
+function createTestToneButton(outputNode) {
+    const button = document.createElement('button');
+    button.textContent = 'Play Test Tone';
+    document.body.appendChild(button);
+    const audioContext = outputNode.context;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    gainNode.gain.value = 0;
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(outputNode);
+    // gainNode.connect(audioContext.destination);
+    oscillator.start();
+    
+    button.addEventListener('click', () => {
+        const startTime = audioContext.currentTime;
+        const endTime = startTime + 1;
+        gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0.2, endTime - 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, endTime);
+    });
+}
+
+function start() {
+    document.getElementById('startButton').addEventListener('click', async () => {
+	const audioDiv = document.getElementById('audioConfig');
+	audioDiv.innerHTML = '';
+
+	const audioManager = new AudioManager();
+	await audioManager.initialize();
+	audioManager.inputSelector(audioDiv);
+	audioManager.outputSelector(audioDiv);
+
+	// Create a couple of nodes we will use to manage the transient connections
+	// with our peer.
+	const peerInputNode = audioManager.ctx().createGain();
+	const peerOutputNode = audioManager.ctx().createGain();
+
+	const gainControllerDiv = document.getElementById('gainController');
+	const gainController = new GainController(
+	    audioManager.localInputNode, audioManager.localOutputNode,
+	    peerInputNode, peerOutputNode,
+	    gainControllerDiv);
+
+	createTestToneButton(audioManager.localOutputNode);
+
+	// Attempt to establish the peer connection.
+	const peerStatus = document.getElementById('peerStatus');
+	const peerConnection = new PeerConnection(
+	    "HelloTwinZ2", peerInputNode, peerOutputNode);
+	
+	peerConnection.addEventListener('peerStreamEstablished', (event) => {
+            console.log('Peer stream established in index.js');
+
+	    
+	    // TODO: make the call.
+	});
+	
+    });
+}
+
+```
+
+```js indexed-db-map.js
+class IndexedDBMap {
+    constructor(databaseName) {
+	this.databaseName = databaseName;
+	this.dbPromise = this.openDatabase();
+    }
+
+    async openDatabase() {
+	return new Promise((resolve, reject) => {
+	    const request = indexedDB.open(this.databaseName, 1);
+
+	    request.onupgradeneeded = (event) => {
+		const db = event.target.result;
+		if (!db.objectStoreNames.contains('map')) {
+		    db.createObjectStore('map', { keyPath: 'key' });
+		}
+	    };
+
+	    request.onsuccess = (event) => {
+		resolve(event.target.result);
+	    };
+
+	    request.onerror = (event) => {
+		reject(event.target.error);
+	    };
+	});
+    }
+
+    async get(key) {
+	console.assert(!!key);
+	const db = await this.dbPromise;
+	const tx = db.transaction('map', 'readonly');
+	const store = tx.objectStore('map');
+	const request = store.get(key);
+
+	return new Promise((resolve, reject) => {
+	    request.onsuccess = (event) => {
+		resolve(event.target.result?.value); 
+	    };
+	    request.onerror = (event) => {
+		reject(event.target.error);
+	    };
+	});
+    }
+    
+    async set(key, value, version) {
+        const db = await this.dbPromise;
+	const tx = db.transaction('map', 'readwrite');
+	const store = tx.objectStore('map');
+	const request = store.put({ key, value, version });
+
+	return new Promise((resolve, reject) => {
+	    request.onsuccess = () => resolve();
+	    request.onerror = (event) => reject(event.target.error);
+	    tx.oncomplete = () => resolve(); 
+	});
+    }
+
+    async contains(key) {
+	const db = await this.dbPromise;
+	const tx = db.transaction('map', 'readonly');
+	const store = tx.objectStore('map');
+	const request = store.get(key);
+
+	return new Promise((resolve, reject) => {
+	    request.onsuccess = (event) => {
+		resolve(event.target.result !== undefined); 
+	    };
+	    request.onerror = (event) => {
+		reject(event.target.error);
+	    };
+	});
+    }
+}
+
+class ObservableIndexedDBMap extends EventTarget {
+    constructor(databaseName) {
+	super(); 
+	this.map = new IndexedDBMap(databaseName); 
+    }
+
+    async get(key) {
+	console.assert(!!key);
+	return this.map.get(key);
+    }
+
+    makeVersion() {
+	return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    }
+
+    async set(key, value, version = undefined) {
+	if (!!version) {
+	    version = makeVersion();
+	} else {
+	    const currentValue = await this.get(key);
+	    if (currentValue.version === version) {
+		// Nothing to do - we already have the latest version.
+		return;
+	    }
+	}
+	await this.map.set(key, value, version);
+	this.dispatchEvent(new CustomEvent('dataChanged', {
+	    detail: { key, value, version } }));
+    }
+
+    async contains(key) {
+	return this.map.contains(key);
+    }
+}
+
+class SyncedDBMap {
+    constructor(databaseName, peerConnection) {
+	this.localMap = new ObservableIndexedDBMap(databaseName);
+	this.peerConnection = peerConnection;
+
+	this.localMap.addEventListener('dataChanged', (event) => {
+	    this._sendUpdate(
+		event.detail.key, event.detail.value, event.detail.version);
+	});
+
+	this.peerConnection.conn.on('data', (data) => {
+	    if (data && data.type === 'db-sync') {
+		this._applyRemoteUpdate(data.key, data.value, data.version);
+	    }
+	});
+    }
+
+    async get(key) {
+	return this.localMap.get(key);
+    }
+
+    async set(key, value, version = undefined) {
+	await this.localMap.set(key, value, version);
+    }
+
+    async contains(key) {
+	return this.localMap.contains(key);
+    }
+
+    _sendUpdate(key, value, version) {
+	if (this.peerConnection.conn && this.peerConnection.conn.open) {
+	    this.peerConnection.sendMessage({
+		type: 'db-sync',
+		key: key,
+		value: value,
+		version: version,
+		source: 'local',
+	    });
+	}
+    }
+
+    async _applyRemoteUpdate(key, value, version) {
+	await this.localMap.set(key, value, version);
+    }
+}
+
+```
+
+```js peer-connection.js
+class PeerConnection extends EventTarget {
+    constructor(channelId, peerInputNode, peerOutputNode) {
+	super();
+	this.channelId = channelId;
+	// Audio coming from the other peer to us
+	this.peerInputNode = peerInputNode;
+
+	// Audio we are sending to the other peer
+	this.peerOutputNode = peerOutputNode;
+
+
+	
+	this.peerId = null; // Initialize peerId as null
+	this.peer = null;
+	this.conn = null;
+	this.otherId = undefined;
+	this.onDataReceived = null;
+	this.onConnectionError = null;
+	this.onConnectionClose = null;
+
+	this._initialize(this.channelId);
+    }
+
+    connect(otherPeerId) {
+	console.log('Connecting to peer...');
+	if (this.conn) {
+	    this.conn.close();
+	}
+	this.conn = this.peer.connect(otherPeerId);
+	this._addConnHandlers();
+    }
+    
+    sendMessage(message) {
+	this.conn.send(message);
+    }
+    
+    async call(audioCtx, outgoingStreamDestination) {
+	return new Promise((resolve, reject) => {
+   	    const call = this.peer.call(this.otherId, outgoingStreamDestination.stream);
+	    call.on('error', (err) => { 
+		console.log(`Call error: ${err.message}`);
+	    });
+	    call.on('stream', (incomingStream) => {
+		console.log('Hack is here.');
+		// Ungodly hack to actually get the audio to flow
+		const a = new Audio();
+		a.muted = true;
+		a.srcObject = incomingStream;
+		a.addEventListener('canplaythrough', () => {
+		    console.log('ready to flow'); });
+		// End ungodly hack.
+		console.log('Call stream');
+		resolve(audioCtx.createMediaStreamSource(incomingStream));
+	    });
+	});
+    }
+
+    _addConnHandlers() {
+	this.conn.on('data', (data) => {
+	    if (data.command === 'chat') {
+		// Handle chat data
+	    } else if (data.command === 'set') {
+		// Handle set data
+	    }
+	});
+
+	this.conn.on('close', () => console.log('Connection closed'));
+	this.conn.on('error', (err) => console.log('Connection error: ', err));
+    }
+    
+    
+    _initialize(channelId) {
+	// Ensure that peerId is set properly
+	this.peer = new Peer(channelId);
+	this.peer.on('open', this._onPeerOpen.bind(this));
+	this.peer.on('connection', this._onPeerConnection.bind(this));
+	this.peer.on('disconnected', this._onPeerDisconnected.bind(this));
+	this.peer.on('close', this._onPeerClose.bind(this));
+	this.peer.on('error', this._onPeerError.bind(this));
+	this.peer.on('call', this._onPeerCall.bind(this));
+    }
+
+    _onPeerOpen(id) {
+	console.log(`Peer open: ${id}`);
+	this.peerId = id; // Set peerId when the peer is opened
+	if (this.channelId === this.peerId) {
+	    console.log('I am server');
+	    this.otherId = id;
+	} else {
+	    console.log('I am client');
+	    this.otherId = this.channelId;
+	    this._join();
+	}
+    }
+
+    _onPeerConnection(c) {
+	console.log(`Peer connection. Other: ${c.peer}`);
+	this.otherId = c.peer;
+	peerStatus.innerHTML += " connected";
+	this.conn = c;
+	this._addConnHandlers();
+    }
+
+    _onPeerDisconnected() {
+	console.log('Peer disconnected');
+    }
+
+    _onPeerClose() {
+	console.log('Peer close');
+    }
+
+    _onPeerError(err) {
+	console.log(`Peer error`);
+	console.log(err);
+	if (err.message === `ID "${this.channelId}" is taken`) {
+	    // Handle error logic (e.g., re-initialize or retry connection)
+	    this._initialize(null);
+	}
+    }
+
+    _onPeerCall(mediaConnection) {
+	console.log(`Peer call from ${mediaConnection.peer}`);
+	if (mediaConnection.peer == this.peer.id) {
+	    console.log('Self call.  Ignore.');
+	}
+	const audioCtx = this.peerOutputNode.context;
+	const outgoingStream =
+	      audioCtx.createMediaStreamDestination();
+	this.peerOutputNode.connect(outgoingStream);
+
+	mediaConnection.answer(outgoingStream.stream);
+	mediaConnection.on(
+	    'stream',
+	    (incomingStream) => this._handleIncomingStream(incomingStream));
+    }
+
+    _handleIncomingStream(incomingStream) {
+	console.log('Stream Received');
+	// Ideally, we want to disconnect anything coming into the
+	// peerInputNode
+	//if (this.peerInputNode) {
+	//    this.peerInputNode.disconnect();
+	//}
+
+	// Listen for stream events for better management
+//	incomingStream.addEventListener(
+//	    'active',
+//	    () => console.log('incomingStream active'));
+//	incomingStream.addEventListener(
+//	    'addtrack',
+//	    () => console.log('incomingStream addtrack'));
+//	incomingStream.addEventListener(
+//	    'inactive',
+//	    () => console.log('incomingStream inactive'));
+//	incomingStream.addEventListener(
+//	    'removetrack',
+//	    () => console.log('incomingStream removetrack'));
+	//
+	console.log('Hack is here.');
+	// Ungodly hack to actually get the audio to flow
+	const a = new Audio();
+	a.muted = true;
+	a.srcObject = incomingStream;
+	a.addEventListener('canplaythrough', () => {
+	    console.log('ready to flow'); });
+	
+	// Properly handle stream and create media source node
+	const audioCtx = this.peerInputNode.context;
+	const peerInputStream = audioCtx.createMediaStreamSource(
+	    incomingStream);
+	peerInputStream.connect(this.peerInputNode);
+
+	new VUMeter(peerInputStream, document.body, 'peer stream');
+    }
+
+    async _join() {
+	console.log('join');
+	if (this.conn) {
+	    this.conn.close();
+	}
+	this.conn = this.peer.connect(this.otherId);
+	this._addConnHandlers();
+
+	const audioCtx = this.peerOutputNode.context;
+	const peerOutputStream = audioCtx.createMediaStreamDestination();
+	this.peerOutputNode.connect(peerOutputStream);
+
+	console.log(`Calling ${this.otherId}`);
+	const mediaConnection = this.peer.call(
+	    this.otherId, peerOutputStream.stream);
+	mediaConnection.on('stream', (incomingStream) => {
+	    console.log('Hack is here.');
+	    // Ungodly hack to actually get the audio to flow
+	    const a = new Audio();
+	    a.muted = true;
+	    a.srcObject = incomingStream;
+	    a.addEventListener('canplaythrough', () => {
+		console.log('ready to flow'); });
+	    // End ungodly hack.
+	    console.log('Got callee stream.');
+	    const peerSourceStream =
+		  audioCtx.createMediaStreamSource(incomingStream);
+	    peerSourceStream.connect(this.peerInputNode);
+	});
+    }
+    
+}
+
+```
+
+```js worklet-recorder.js
+class WorkletRecorder extends AudioWorkletProcessor {
+    first = true;
+
+    process(inputs) {
+      if (inputs.length == 0) { return; }
+      const channels = inputs[0];
+      if (channels.length == 0) { return; }
+      const samples = channels[0];
+      // Caller expects monophonic data, so only return the first channel.
+      this.port.postMessage({ 
+        timestamp: currentTime,
+        frame: currentFrame,
+        samples: samples, 
+      });
+      return true;
+    }
+}
+
+registerProcessor('worklet-recorder', WorkletRecorder);
+```
+
+```html index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Device Selection</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="audio.js"></script>
+  <script src="peer-connection.js"></script>
+  <script src="index.js"></script>
+</head>
+<body onload="start()">
+  <div id="audioConfig">
+    <button id="startButton">Start</button>
+  </div>
+  <div id='peerStatus'></div>
+  <div id='gainController'></div>
+</body>
+</html>
+
+```
+
+You are working with a professional software developer.  You don't need to
+explain the code you produce.  Please prefer short answers to longer ones.
+For small changes, describing the change with a few lines of code is preferred
+over rewriting the entire project.
+When significant changes are required to a file, present the entire file.
+Sometimes you will be asked for design advice.  Please provide the advice without
+producing any code.
+Prefer writing JavaScript classes to "naked" functions.
