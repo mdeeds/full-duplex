@@ -3,10 +3,10 @@ setlocal
 
 del all-js.txt
 
-for %%a in (*.js) do (
+for %%a in (*.css) do (
     echo Processing file: %%a
     (
-	    echo ```js %%a
+	    echo ```css %%a
       type "%%a"
 	    echo.
       echo ```
@@ -23,16 +23,28 @@ for %%a in (*.html) do (
       echo.
     ) >> all-js.txt
 )
-for %%a in (*.css) do (
+for %%a in (*.js) do (
     echo Processing file: %%a
     (
-	    echo ```css %%a
+	    echo ```js %%a
       type "%%a"
 	    echo.
       echo ```
       echo.
     ) >> all-js.txt
 )
+
+for %%a in (*.md) do (
+    echo Processing file: %%a
+    (
+	    echo ```md %%a
+      type "%%a"
+	    echo.
+      echo ```
+      echo.
+    ) >> all-js.txt
+)
+
 
 (
   echo You are working with a professional software developer.  You don't need to

@@ -88,8 +88,8 @@ class ObservableIndexedDBMap extends EventTarget {
     }
 
     async set(key, value, version = undefined) {
-	if (!!version) {
-	    version = makeVersion();
+	if (!version) {
+	    version = this.makeVersion();
 	} else {
 	    const currentValue = await this.get(key);
 	    if (currentValue.version === version) {
@@ -116,12 +116,17 @@ class SyncedDBMap {
 	    this._sendUpdate(
 		event.detail.key, event.detail.value, event.detail.version);
 	});
+	this._attachHandlers();
+    }
 
-	this.peerConnection.conn.on('data', (data) => {
-	    if (data && data.type === 'db-sync') {
-		this._applyRemoteUpdate(data.key, data.value, data.version);
-	    }
-	});
+    async _attachHandlers() {
+	await this.peerConnection.waitForConnection();
+
+
+	// TODO: Add event listener to this.peerConnection and if the
+	// detail has the 'set' command, apply the remote update.
+	// this._applyRemoteUpdate(data.key, data.value, data.version);
+	console.log('Synchronization handlers attached.');
     }
 
     async get(key) {

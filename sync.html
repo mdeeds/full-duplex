@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SyncedDBMap Demo</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="indexed-db-map.js"></script>
+    <script src="peer-connection.js"></script>
+    <script>
+        let syncedDBMap;
+
+      async function startDemo() {
+	  const startButton = document.getElementById('startButton');
+	  startButton.remove();
+	  // We create these  nodes but don't wire them up for this demo.
+	  const audioCtx = new AudioContext();
+	  const peerInputNode = audioCtx.createGain();
+	  const peerOutputNode = audioCtx.createGain();
+	  const div1 = document.getElementById('div1');
+
+	  console.log('Creating peer connection.');
+	  
+	  const peerConnection = new PeerConnection(
+	      'syncDemoConnectionId', peerInputNode, peerOutputNode);
+	  
+          syncedDBMap = new SyncedDBMap(
+	      'syncDemoDB', peerConnection);
+
+          syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
+              div1.textContent = event.detail.value;
+              document.getElementById('div2').textContent = event.detail.value;
+          });
+
+	  div1.addEventListener('input', updateContent);
+        }
+
+        async function updateContent() {
+            const content = document.getElementById('div1').textContent;
+	    console.log(`Content: ${content}`);
+            await syncedDBMap.set('sharedContent', content);
+        }
+    </script>
+</head>
+<body>
+  <button onclick="startDemo()" id='startButton'>Start Demo</button>
+    <div>
+        <h2>Div 1</h2>
+        <div contenteditable='true' id="div1"></div>
+    </div>
+    <div>
+        <h2>Div 2</h2>
+        <div contenteditable='true' id="div2"></div>
+    </div>
+</body>
+</html>

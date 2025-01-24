@@ -7,8 +7,6 @@ class PeerConnection extends EventTarget {
 
 	// Audio we are sending to the other peer
 	this.peerOutputNode = peerOutputNode;
-
-
 	
 	this.peerId = null; // Initialize peerId as null
 	this.peer = null;
@@ -19,6 +17,19 @@ class PeerConnection extends EventTarget {
 	this.onConnectionClose = null;
 
 	this._initialize(this.channelId);
+    }
+
+    // Resolves when peer.conn is no longer null.
+    async waitForConnection() {
+        return new Promise(resolve => {
+            if (this.conn) {
+                resolve();
+                return;
+            }
+            this.peer.on('connection', () => {
+                resolve();
+            });
+        });
     }
 
     connect(otherPeerId) {
@@ -57,10 +68,9 @@ class PeerConnection extends EventTarget {
 
     _addConnHandlers() {
 	this.conn.on('data', (data) => {
-	    if (data.command === 'chat') {
-		// Handle chat data
-	    } else if (data.command === 'set') {
-		// Handle set data
+	    if (data.command === 'message') {
+		this.dispatchEvent(new CustomEvent('remoteDataReceived',
+						   {detail: data}));
 	    }
 	});
 
@@ -78,6 +88,7 @@ class PeerConnection extends EventTarget {
 	this.peer.on('close', this._onPeerClose.bind(this));
 	this.peer.on('error', this._onPeerError.bind(this));
 	this.peer.on('call', this._onPeerCall.bind(this));
+	console.log('Initialization complete.');
     }
 
     _onPeerOpen(id) {
@@ -141,21 +152,6 @@ class PeerConnection extends EventTarget {
 	//if (this.peerInputNode) {
 	//    this.peerInputNode.disconnect();
 	//}
-
-	// Listen for stream events for better management
-//	incomingStream.addEventListener(
-//	    'active',
-//	    () => console.log('incomingStream active'));
-//	incomingStream.addEventListener(
-//	    'addtrack',
-//	    () => console.log('incomingStream addtrack'));
-//	incomingStream.addEventListener(
-//	    'inactive',
-//	    () => console.log('incomingStream inactive'));
-//	incomingStream.addEventListener(
-//	    'removetrack',
-//	    () => console.log('incomingStream removetrack'));
-	//
 	console.log('Hack is here.');
 	// Ungodly hack to actually get the audio to flow
 	const a = new Audio();
@@ -169,8 +165,6 @@ class PeerConnection extends EventTarget {
 	const peerInputStream = audioCtx.createMediaStreamSource(
 	    incomingStream);
 	peerInputStream.connect(this.peerInputNode);
-
-	new VUMeter(peerInputStream, document.body, 'peer stream');
     }
 
     async _join() {
