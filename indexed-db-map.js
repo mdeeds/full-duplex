@@ -43,6 +43,7 @@ class IndexedDBMap {
     }
     
     async set(key, value, version) {
+	// console.log(`IndexedDBMap set ${value}`);
         const db = await this.dbPromise;
 	const tx = db.transaction('map', 'readwrite');
 	const store = tx.objectStore('map');
@@ -83,23 +84,25 @@ class ObservableIndexedDBMap extends EventTarget {
 	return this.map.get(key);
     }
 
-    makeVersion() {
+    _makeVersion() {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
     }
 
     async set(key, value, version = undefined) {
+	// console.log(`ObservableIndexedDBMap set ${value}`);
 	if (!version) {
-	    version = this.makeVersion();
+	    version = this._makeVersion();
 	} else {
 	    const currentValue = await this.get(key);
-	    if (currentValue.version === version) {
+	    if (currentValue && currentValue.version === version) {
 		// Nothing to do - we already have the latest version.
-		return;
+		return false;
 	    }
 	}
 	await this.map.set(key, value, version);
 	this.dispatchEvent(new CustomEvent('dataChanged', {
 	    detail: { key, value, version } }));
+	return true;
     }
 
     async contains(key) {
@@ -111,21 +114,20 @@ class SyncedDBMap {
     constructor(databaseName, peerConnection) {
 	this.localMap = new ObservableIndexedDBMap(databaseName);
 	this.peerConnection = peerConnection;
-
-	this.localMap.addEventListener('dataChanged', (event) => {
-	    this._sendUpdate(
-		event.detail.key, event.detail.value, event.detail.version);
-	});
 	this._attachHandlers();
     }
 
     async _attachHandlers() {
 	await this.peerConnection.waitForConnection();
 
-
-	// TODO: Add event listener to this.peerConnection and if the
-	// detail has the 'set' command, apply the remote update.
-	// this._applyRemoteUpdate(data.key, data.value, data.version);
+	console.log('Peer connection established.');
+	this.peerConnection.addEventListener('remoteDataReceived', (event) => {
+	    // console.log('Data reached DB');
+	    // console.log(event.detail);
+	    
+	    this._setInternal(
+		event.detail.key, event.detail.value, event.detail.version);
+	});
 	console.log('Synchronization handlers attached.');
     }
 
@@ -134,7 +136,13 @@ class SyncedDBMap {
     }
 
     async set(key, value, version = undefined) {
-	await this.localMap.set(key, value, version);
+	// console.log(`SyncedDBMap set ${value}`);
+	await this._setInternal(key, value, version);
+	this._sendUpdate(key, value, version);
+    }
+
+    async _setInternal(key, value, version = undefined) {
+	this.localMap.set(key, value, version);
     }
 
     async contains(key) {
@@ -142,6 +150,7 @@ class SyncedDBMap {
     }
 
     _sendUpdate(key, value, version) {
+	// console.log(`send update ${value}`);
 	if (this.peerConnection.conn && this.peerConnection.conn.open) {
 	    this.peerConnection.sendMessage({
 		type: 'db-sync',
@@ -151,9 +160,5 @@ class SyncedDBMap {
 		source: 'local',
 	    });
 	}
-    }
-
-    async _applyRemoteUpdate(key, value, version) {
-	await this.localMap.set(key, value, version);
     }
 }

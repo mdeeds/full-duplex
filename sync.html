@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>SyncedDBMap Demo</title>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="indexed-db-map.js"></script>
     <script src="peer-connection.js"></script>
     <script>
-        let syncedDBMap;
+      let syncedDBMap;
 
       async function startDemo() {
 	  const startButton = document.getElementById('startButton');
@@ -26,29 +26,31 @@
 	      'syncDemoDB', peerConnection);
 
           syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
+	      console.log('dataChanged event from DB');
               div1.textContent = event.detail.value;
               document.getElementById('div2').textContent = event.detail.value;
           });
 
 	  div1.addEventListener('input', updateContent);
-        }
+      }
 
-        async function updateContent() {
-            const content = document.getElementById('div1').textContent;
-	    console.log(`Content: ${content}`);
-            await syncedDBMap.set('sharedContent', content);
-        }
+      async function updateContent() {
+	  console.log('input event from HTML');
+          const content = document.getElementById('div1').textContent;
+	  console.log(`Content: ${content}`);
+          await syncedDBMap.set('sharedContent', content);
+      }
     </script>
-</head>
-<body>
-  <button onclick="startDemo()" id='startButton'>Start Demo</button>
+  </head>
+  <body>
+    <button onclick="startDemo()" id='startButton'>Start Demo</button>
     <div>
-        <h2>Div 1</h2>
-        <div contenteditable='true' id="div1"></div>
+      <h2>Div 1</h2>
+      <div contenteditable='true' id="div1"></div>
     </div>
     <div>
-        <h2>Div 2</h2>
-        <div contenteditable='true' id="div2"></div>
+      <h2>Div 2</h2>
+      <div contenteditable='true' id="div2"></div>
     </div>
-</body>
+  </body>
 </html>

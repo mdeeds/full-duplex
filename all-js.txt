@@ -1,3 +1,84 @@
+```html index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Device Selection</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="audio.js"></script>
+  <script src="peer-connection.js"></script>
+  <script src="index.js"></script>
+</head>
+<body onload="start()">
+  <div id="audioConfig">
+    <button id="startButton">Start</button>
+  </div>
+  <div id='peerStatus'></div>
+  <div id='gainController'></div>
+</body>
+</html>
+
+```
+
+```html sync.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SyncedDBMap Demo</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="indexed-db-map.js"></script>
+    <script src="peer-connection.js"></script>
+    <script>
+      let syncedDBMap;
+
+      async function startDemo() {
+	  const startButton = document.getElementById('startButton');
+	  startButton.remove();
+	  // We create these  nodes but don't wire them up for this demo.
+	  const audioCtx = new AudioContext();
+	  const peerInputNode = audioCtx.createGain();
+	  const peerOutputNode = audioCtx.createGain();
+	  const div1 = document.getElementById('div1');
+
+	  console.log('Creating peer connection.');
+	  
+	  const peerConnection = new PeerConnection(
+	      'syncDemoConnectionId', peerInputNode, peerOutputNode);
+	  
+          syncedDBMap = new SyncedDBMap(
+	      'syncDemoDB', peerConnection);
+
+          syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
+	      console.log('dataChanged event from DB');
+              div1.textContent = event.detail.value;
+              document.getElementById('div2').textContent = event.detail.value;
+          });
+
+	  div1.addEventListener('input', updateContent);
+      }
+
+      async function updateContent() {
+	  console.log('input event from HTML');
+          const content = document.getElementById('div1').textContent;
+	  console.log(`Content: ${content}`);
+          await syncedDBMap.set('sharedContent', content);
+      }
+    </script>
+  </head>
+  <body>
+    <button onclick="startDemo()" id='startButton'>Start Demo</button>
+    <div>
+      <h2>Div 1</h2>
+      <div contenteditable='true' id="div1"></div>
+    </div>
+    <div>
+      <h2>Div 2</h2>
+      <div contenteditable='true' id="div2"></div>
+    </div>
+  </body>
+</html>
+
+```
+
 ```js audio.js
 class AudioManager {
     constructor() {
@@ -349,6 +430,7 @@ class IndexedDBMap {
     }
     
     async set(key, value, version) {
+	// console.log(`IndexedDBMap set ${value}`);
         const db = await this.dbPromise;
 	const tx = db.transaction('map', 'readwrite');
 	const store = tx.objectStore('map');
@@ -389,23 +471,25 @@ class ObservableIndexedDBMap extends EventTarget {
 	return this.map.get(key);
     }
 
-    makeVersion() {
+    _makeVersion() {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
     }
 
     async set(key, value, version = undefined) {
-	if (!!version) {
-	    version = makeVersion();
+	// console.log(`ObservableIndexedDBMap set ${value}`);
+	if (!version) {
+	    version = this._makeVersion();
 	} else {
 	    const currentValue = await this.get(key);
-	    if (currentValue.version === version) {
+	    if (currentValue && currentValue.version === version) {
 		// Nothing to do - we already have the latest version.
-		return;
+		return false;
 	    }
 	}
 	await this.map.set(key, value, version);
 	this.dispatchEvent(new CustomEvent('dataChanged', {
 	    detail: { key, value, version } }));
+	return true;
     }
 
     async contains(key) {
@@ -417,17 +501,21 @@ class SyncedDBMap {
     constructor(databaseName, peerConnection) {
 	this.localMap = new ObservableIndexedDBMap(databaseName);
 	this.peerConnection = peerConnection;
+	this._attachHandlers();
+    }
 
-	this.localMap.addEventListener('dataChanged', (event) => {
-	    this._sendUpdate(
+    async _attachHandlers() {
+	await this.peerConnection.waitForConnection();
+
+	console.log('Peer connection established.');
+	this.peerConnection.addEventListener('remoteDataReceived', (event) => {
+	    // console.log('Data reached DB');
+	    // console.log(event.detail);
+	    
+	    this._setInternal(
 		event.detail.key, event.detail.value, event.detail.version);
 	});
-
-	this.peerConnection.conn.on('data', (data) => {
-	    if (data && data.type === 'db-sync') {
-		this._applyRemoteUpdate(data.key, data.value, data.version);
-	    }
-	});
+	console.log('Synchronization handlers attached.');
     }
 
     async get(key) {
@@ -435,7 +523,13 @@ class SyncedDBMap {
     }
 
     async set(key, value, version = undefined) {
-	await this.localMap.set(key, value, version);
+	// console.log(`SyncedDBMap set ${value}`);
+	await this._setInternal(key, value, version);
+	this._sendUpdate(key, value, version);
+    }
+
+    async _setInternal(key, value, version = undefined) {
+	this.localMap.set(key, value, version);
     }
 
     async contains(key) {
@@ -443,6 +537,7 @@ class SyncedDBMap {
     }
 
     _sendUpdate(key, value, version) {
+	// console.log(`send update ${value}`);
 	if (this.peerConnection.conn && this.peerConnection.conn.open) {
 	    this.peerConnection.sendMessage({
 		type: 'db-sync',
@@ -452,10 +547,6 @@ class SyncedDBMap {
 		source: 'local',
 	    });
 	}
-    }
-
-    async _applyRemoteUpdate(key, value, version) {
-	await this.localMap.set(key, value, version);
     }
 }
 
@@ -471,8 +562,6 @@ class PeerConnection extends EventTarget {
 
 	// Audio we are sending to the other peer
 	this.peerOutputNode = peerOutputNode;
-
-
 	
 	this.peerId = null; // Initialize peerId as null
 	this.peer = null;
@@ -483,6 +572,20 @@ class PeerConnection extends EventTarget {
 	this.onConnectionClose = null;
 
 	this._initialize(this.channelId);
+
+	this.connectionResolution = null;
+    }
+
+    // Resolves when peer.conn is no longer null.
+    async waitForConnection() {
+        return new Promise(resolve => {
+            if (this.conn) {
+                resolve();
+                return;
+            } else {
+		this.connectionResolution = resolve;
+	    }
+        });
     }
 
     connect(otherPeerId) {
@@ -495,6 +598,7 @@ class PeerConnection extends EventTarget {
     }
     
     sendMessage(message) {
+	console.log(`Sending to ${this.conn.peer}`);
 	this.conn.send(message);
     }
     
@@ -521,11 +625,10 @@ class PeerConnection extends EventTarget {
 
     _addConnHandlers() {
 	this.conn.on('data', (data) => {
-	    if (data.command === 'chat') {
-		// Handle chat data
-	    } else if (data.command === 'set') {
-		// Handle set data
-	    }
+	    console.log('Data reached Peer Connection');
+	    console.log(data);
+	    this.dispatchEvent(new CustomEvent('remoteDataReceived',
+					       {detail: data}));
 	});
 
 	this.conn.on('close', () => console.log('Connection closed'));
@@ -542,9 +645,10 @@ class PeerConnection extends EventTarget {
 	this.peer.on('close', this._onPeerClose.bind(this));
 	this.peer.on('error', this._onPeerError.bind(this));
 	this.peer.on('call', this._onPeerCall.bind(this));
+	console.log('Initialization complete.');
     }
 
-    _onPeerOpen(id) {
+    async _onPeerOpen(id) {
 	console.log(`Peer open: ${id}`);
 	this.peerId = id; // Set peerId when the peer is opened
 	if (this.channelId === this.peerId) {
@@ -553,14 +657,17 @@ class PeerConnection extends EventTarget {
 	} else {
 	    console.log('I am client');
 	    this.otherId = this.channelId;
-	    this._join();
+	    await this._join();
+	}
+	if (this.connectionResolution) {
+	    console.log('Resolving connection waiter.');
+	    this.connectionResolution();
 	}
     }
 
     _onPeerConnection(c) {
 	console.log(`Peer connection. Other: ${c.peer}`);
 	this.otherId = c.peer;
-	peerStatus.innerHTML += " connected";
 	this.conn = c;
 	this._addConnHandlers();
     }
@@ -605,21 +712,6 @@ class PeerConnection extends EventTarget {
 	//if (this.peerInputNode) {
 	//    this.peerInputNode.disconnect();
 	//}
-
-	// Listen for stream events for better management
-//	incomingStream.addEventListener(
-//	    'active',
-//	    () => console.log('incomingStream active'));
-//	incomingStream.addEventListener(
-//	    'addtrack',
-//	    () => console.log('incomingStream addtrack'));
-//	incomingStream.addEventListener(
-//	    'inactive',
-//	    () => console.log('incomingStream inactive'));
-//	incomingStream.addEventListener(
-//	    'removetrack',
-//	    () => console.log('incomingStream removetrack'));
-	//
 	console.log('Hack is here.');
 	// Ungodly hack to actually get the audio to flow
 	const a = new Audio();
@@ -633,8 +725,6 @@ class PeerConnection extends EventTarget {
 	const peerInputStream = audioCtx.createMediaStreamSource(
 	    incomingStream);
 	peerInputStream.connect(this.peerInputNode);
-
-	new VUMeter(peerInputStream, document.body, 'peer stream');
     }
 
     async _join() {
@@ -694,24 +784,291 @@ class WorkletRecorder extends AudioWorkletProcessor {
 registerProcessor('worklet-recorder', WorkletRecorder);
 ```
 
-```html index.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Audio Device Selection</title>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="audio.js"></script>
-  <script src="peer-connection.js"></script>
-  <script src="index.js"></script>
-</head>
-<body onload="start()">
-  <div id="audioConfig">
-    <button id="startButton">Start</button>
-  </div>
-  <div id='peerStatus'></div>
-  <div id='gainController'></div>
-</body>
-</html>
+```md readme.md
+# Product Requirements Document: Collaborative Music Workspace
+
+Connecting musicians and empowering their creativity.
+
+## 1. Introduction
+
+This document outlines the requirements for a collaborative music
+workspace application. The application aims to provide musicians with
+a platform to create, share, and refine musical ideas in real-time,
+regardless of their physical location.
+
+
+## 2. Goals
+
+* Enable real-time musical collaboration between two users.
+
+* Provide tools for sharing and developing musical ideas, including
+    lyrics, chords, and audio recordings.
+
+* Offer high-quality audio transmission for remote collaboration and
+    songwriting sessions.
+
+* Maintain a user-friendly and intuitive interface.
+
+## 3. Target Audience
+
+* Musicians (instrumentalists, vocalists, songwriters, composers).
+
+* Music educators and students.
+
+* Songwriting partners.
+
+* Music producers
+
+## 4. Features
+
+### 4.1 Core Features
+
+* **Peer-to-Peer Audio Connection:**
+
+    * Establish and maintain low-latency audio connections with no noise
+    reduction, compression, or other effects that are ineffective for
+    music collaboration.
+    
+    * Support selection of audio input and output devices.
+    
+    * Provide individual gain control for monitoring and controlling outgoing
+        and incoming signals.
+    
+* **Shared Scratch Pad:**
+
+    * Real-time collaborative text editor.
+    
+    * Specific formatting options for chords and lyric lines.
+        
+* **Audio Recording & Sharing:**
+
+    * Ability to record audio snippets locally.
+
+    * Metronome with count-in options
+    
+    * Audio snippets are immediately shared with other participants
+    
+    * Playback controls for shared audio.
+    
+    * Visual representation of audio (e.g. waveform)
+
+    * Simple arrangement of audio with lyrics
+
+    * Shared BPM, measures per line, "tape rate" configuration
+
+
+### 4.2 Future Enhancements (Out of Scope for Initial Release)
+
+* Instrument tuner.
+
+*   Advanced audio effects processing.
+
+*   Integration with digital audio workstations (DAWs).
+
+*   Video conferencing.
+
+## 5. Technical Requirements
+
+* **Platform:** Web-based application (cross-platform compatibility).
+
+* **Technology Stack:** JavaScript, HTML, CSS, Web Audio API, WebRTC,
+      IndexedDB.
+
+* **Performance:** High quality audio recording and transmission is
+    critical. Near immediate synchronization of song edits are
+    essential.
+
+* **Scalability:** The system should be able to handle two concurent
+    users and sixteen simultaneous audio tracks.
+
+* **Security:** Secure peer-to-peer connection and data transmission.
+
+##6. User Interface (UI) and User Experience (UX) - Detailed MVP Design
+
+The core goal is to facilitate real-time musical collaboration. The UI/UX should be simple, functional, and not get in the way of the creative process.
+
+###6.1. Overall Layout:
+
+*   **Split Screen:** The interface will be divided into two main areas:
+
+    * **Shared Workspace:** The main area where the shared text
+          editor, recorded audio snippets, metronome, and other
+          collaborative tools are located.
+    
+    * **Local Control Panel:** A top bar that
+          provides controls for audio settings, input/output
+          selection, gain adjustment, and user-specific controls.
+    
+* **Clean Design:** The UI should avoid unnecessary visual
+      clutter. Use clear icons and simple typography.
+
+* **Responsive Design:** The layout should adapt to different screen
+      sizes (desktop, tablets).
+
+###6.2. Shared Workspace:
+
+* **Real-time Text Editor:** A large, editable text area where users
+    can write lyrics, chord progressions, and notes.
+    
+    * Real-time updates: When one user types, the changes should
+        appear immediately on the other user's screen.
+    
+    *   Basic Formatting:
+    
+        *   Simple markup for chords (e.g., `[C]`, `[Am]`) to be displayed differently.
+	
+        *   Clear distinction between lyric lines and other notations.
+	
+*   **Audio Snippets:**
+
+    * Audio snippets are displayed directly below or above the lyrics
+        they correspond to.
+    
+    *   Each snippet will have:
+    
+        *   A waveform display for visual representation.
+	
+        *   The ability to be dragged and dropped for simple arrangement.
+	
+        *   Visual alignment of audio to beats and bars (grid-like).
+	
+*   **Metronome & Tempo:**
+
+    *   A simple start/stop control for the metronome.
+    
+    *   Display for the current tempo (BPM).
+    
+    *   Input field to change BPM.
+    
+    *   Count-in option.
+    
+*   **Track Settings**
+
+    *  Number of measures in a line
+    
+    *  "Tape speed"
+
+###6.3. Local Control Panel:
+
+*   **Audio Input/Output:**
+
+    * Dropdown menus or radio buttons to select audio input and output
+        devices.
+    
+    * Clear labels indicating the selected input and output devices.
+    
+* **Gain Controls:**
+
+    * Individual sliders for adjusting the local input gain, the gain
+        of audio being sent to the peer, and the gain of audio
+        received from the peer.
+    
+* **Push to Talk:**
+
+    When musician 1 starts playback, musician 2 can hear it.  Musician
+    2 is muted unless they hold a button to talk.  This prevents
+    musician 2 from transmitting their playing back to musician 1.
+    Musician 1 would hear this with a significant delay which would
+    make it difficult for musician 1 to play.  When muted, a musician
+    can record.
+    
+* **Recording Controls:**
+
+    * A prominent record button.
+    
+    * A visual indicator to show that recording is in progress.
+    
+    * The recording will be added to the "Audio Snippet Area".
+
+###6.4. User Experience (UX) Principles:
+
+* **Real-Time Feedback:** Provide visual cues for all actions, e.g.,
+      when audio is playing, when recording is in progress, when a
+      connection is made.
+
+* **Intuitive Controls:** Make the controls easily accessible and
+      understandable without requiring a tutorial.
+
+* **Minimalist Approach:** Avoid unnecessary UI elements and
+      animations. Focus on what’s essential for real-time
+      collaboration.
+
+* **Low Latency:** Strive for the lowest possible latency between
+      actions and their effects.
+
+* **Clear Communication:** Provide clear messaging for status updates,
+      errors, and other important information.
+
+###6.5. Workflow Example:
+
+1.  **Setup:**
+
+* Both users open the web application and a peer-to-peer connection is
+    automatically established.
+    
+    * Both users select their audio input/output devices and adjust
+        gain levels.
+
+2.  **Songwriting:**
+
+    * One user starts typing lyrics and chords in the shared text
+        editor. The other user sees the changes in real-time.
+    
+    * One user sets the tempo
+
+3.  **Recording & Sharing:**
+
+    * One user starts recording.  The metronome clicks, and the other
+    user can hear the metronome and what the first user is playing.
+    
+    * The recorded snippet appears as a waveform in the shared audio
+        area.
+
+    * Either user can now play back the recorded audio.
+
+4.  **Refining:**
+
+    * The users drag the audio snippets and arrange them to create a
+       basic song structure.
+    
+    * The users work together to refine lyrics, timing, and tempo.
+
+**In Summary:**
+
+The MVP should prioritize providing a simple, efficient, and real-time
+platform for musicians to collaborate. The UI/UX design will focus on
+these key elements:
+
+*   Real-time text editor with chord notation.
+
+*   Simple audio recording and sharing with waveform display.
+
+*   Local gain adjustment and audio device selection.
+
+*   Metronome controls.
+
+*   A clear "push to talk" feature.
+
+This will allow musicians to start creating, sharing, and iterating on
+ideas with minimal friction.
+
+## 7. Release Criteria
+
+* All core features implemented and tested.
+
+* Stable and reliable audio connections.
+
+* User-friendly interface with clear instructions.
+
+* Basic error handling and informative messages.
+
+## 8. Future Considerations
+
+* Monetization strategy (e.g., subscription, premium features).
+
+* Community features (e.g., public jam sessions, user profiles).
+
+* Mobile application development.
 
 ```
 

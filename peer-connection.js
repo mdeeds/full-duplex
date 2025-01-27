@@ -17,6 +17,8 @@ class PeerConnection extends EventTarget {
 	this.onConnectionClose = null;
 
 	this._initialize(this.channelId);
+
+	this.connectionResolution = null;
     }
 
     // Resolves when peer.conn is no longer null.
@@ -25,10 +27,9 @@ class PeerConnection extends EventTarget {
             if (this.conn) {
                 resolve();
                 return;
-            }
-            this.peer.on('connection', () => {
-                resolve();
-            });
+            } else {
+		this.connectionResolution = resolve;
+	    }
         });
     }
 
@@ -42,6 +43,7 @@ class PeerConnection extends EventTarget {
     }
     
     sendMessage(message) {
+	console.log(`Sending to ${this.conn.peer}`);
 	this.conn.send(message);
     }
     
@@ -68,10 +70,10 @@ class PeerConnection extends EventTarget {
 
     _addConnHandlers() {
 	this.conn.on('data', (data) => {
-	    if (data.command === 'message') {
-		this.dispatchEvent(new CustomEvent('remoteDataReceived',
-						   {detail: data}));
-	    }
+	    console.log('Data reached Peer Connection');
+	    console.log(data);
+	    this.dispatchEvent(new CustomEvent('remoteDataReceived',
+					       {detail: data}));
 	});
 
 	this.conn.on('close', () => console.log('Connection closed'));
@@ -91,7 +93,7 @@ class PeerConnection extends EventTarget {
 	console.log('Initialization complete.');
     }
 
-    _onPeerOpen(id) {
+    async _onPeerOpen(id) {
 	console.log(`Peer open: ${id}`);
 	this.peerId = id; // Set peerId when the peer is opened
 	if (this.channelId === this.peerId) {
@@ -100,14 +102,17 @@ class PeerConnection extends EventTarget {
 	} else {
 	    console.log('I am client');
 	    this.otherId = this.channelId;
-	    this._join();
+	    await this._join();
+	}
+	if (this.connectionResolution) {
+	    console.log('Resolving connection waiter.');
+	    this.connectionResolution();
 	}
     }
 
     _onPeerConnection(c) {
 	console.log(`Peer connection. Other: ${c.peer}`);
 	this.otherId = c.peer;
-	peerStatus.innerHTML += " connected";
 	this.conn = c;
 	this._addConnHandlers();
     }
