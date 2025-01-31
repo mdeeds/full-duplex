@@ -52,10 +52,14 @@ function start() {
 	
 	peerConnection.addEventListener('peerStreamEstablished', (event) => {
             console.log('Peer stream established in index.js');
-
-	    
-	    // TODO: make the call.
 	});
-	
+
+	const audioSnippetsDiv = document.getElementById('audioSnippets');
+	audioManager.addEventListener('recordingAvailable', (event) => {
+	    const buffer = event.detail.buffer;
+	    const snippetDiv = document.createElement('div');
+	    snippetDiv.textContent = `Samples: ${buffer.length}`;
+	    audioSnippetsDiv.appendChild(snippetDiv);
+	});
     });
 }

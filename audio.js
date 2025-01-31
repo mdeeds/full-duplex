@@ -1,5 +1,6 @@
-class AudioManager {
+class AudioManager extends EventTarget {
     constructor() {
+	super();
 	this.audioCtx = null;
 	this.localOutputNode = null;
 	this.localInputNode = null;
@@ -32,7 +33,7 @@ class AudioManager {
 
 	const recordButton = document.getElementById('recordButton');
 	recordButton.addEventListener(
-	    'click', () => { this._toggleRecording(); });
+	    'click', (event) => { this._toggleRecording(event); });
 
 	// Create a worklet recorder and add it to the graph.
 	await this.audioCtx.audioWorklet.addModule('worklet-recorder.js');
@@ -57,14 +58,18 @@ class AudioManager {
 	    this.recordingBuffer = newBuffer;
 	}
 	this.recordingBuffer.set(data.samples, this.samplesRecorded);
-	this.samplesRecorded += data.length;
+	this.samplesRecorded += data.samples.length;
     }
     
-    _toggleRecording() {
+    _toggleRecording(event) {
 	if (this.isRecording) {
-	    // TODO: Raise the event with the new, complete buffer
+	    event.target.innerHTML = 'Record';
+	    this.dispatchEvent(new CustomEvent('recordingAvailable', {
+		detail: {buffer: this.recordingBuffer}}));
 	    this.recordingBuffer = null;
+	    this.samplesRecorded = 0;
 	} else {
+	    event.target.innerHTML = 'Stop';
 	    this.recordingBuffer = new Float32Array(this.audioCtx.sampleRate);
 	}
 	this.isRecording = !this.isRecording;
