@@ -22,6 +22,60 @@ function createTestToneButton(outputNode) {
     });
 }
 
+function audioBufferToWav(audioBuffer) {
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const length = audioBuffer.length * numberOfChannels * 2;
+    const buffer = new ArrayBuffer(44 + length);
+    const view = new DataView(buffer);
+
+    // RIFF identifier
+    writeString(view, 0, 'RIFF');
+    // RIFF chunk size
+    view.setUint32(4, 36 + length, true);
+    // RIFF type
+    writeString(view, 8, 'WAVE');
+    // Format chunk identifier
+    writeString(view, 12, 'fmt ');
+    // Format chunk size
+    view.setUint32(16, 16, true);
+    // Format code
+    view.setUint16(20, 1, true);
+    // Number of channels
+    view.setUint16(22, numberOfChannels, true);
+    // Sample rate
+    view.setUint32(24, sampleRate, true);
+    // Byte rate (sample rate * block align)
+    view.setUint32(28, sampleRate * 2 * numberOfChannels, true);
+    // Block align (channels * bytes per sample)
+    view.setUint16(32, numberOfChannels * 2, true);
+    // Bits per sample
+    view.setUint16(34, 16, true);
+    // Data chunk identifier
+    writeString(view, 36, 'data');
+    // Data chunk size
+    view.setUint32(40, length, true);
+
+    floatTo16BitPCM(view, 44, audioBuffer);
+    
+    return buffer;
+}
+
+
+function floatTo16BitPCM(output, offset, input) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, input.getChannelData(0)[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+
 function start() {
     document.getElementById('startButton').addEventListener('click', async () => {
 	const audioDiv = document.getElementById('audioConfig');
@@ -57,6 +111,8 @@ function start() {
 	const audioSnippetsDiv = document.getElementById('audioSnippets');
 	audioManager.addEventListener('recordingAvailable', (event) => {
 	    const buffer = event.detail.buffer;
+	    const numSamples = event.detail.numSamples;
+	    const audioCtx = audioManager.localOutputNode.context;
 	    const snippetDiv = document.createElement('div');
 	    snippetDiv.textContent =
 		`${Math.round(1000 * event.detail.seconds)/1000}s`;
@@ -68,7 +124,6 @@ function start() {
 		'click',
 		() => {
 		    // Play the buffer.
-		    const audioCtx = audioManager.localOutputNode.context;
 		    const source = audioCtx.createBufferSource();
 		    const audioBuffer = audioCtx.createBuffer(
 			1, buffer.length, audioCtx.sampleRate);
@@ -77,7 +132,16 @@ function start() {
 		    source.connect(audioManager.localOutputNode);
 		    source.start();		    
 		});
-	    
+	    snippetDiv.draggable = true;
+	    snippetDiv.addEventListener('dragstart', (event) => {
+		const audioCtx = audioManager.localOutputNode.context;
+		const audioBuffer = audioCtx.createBuffer(
+		    1, numSamples, audioCtx.sampleRate);
+		audioBuffer.copyToChannel(buffer, 0);
+		const wavData = audioBufferToWav(audioBuffer);
+		event.dataTransfer.setData('audio/wav', wavData);
+	    });
+
 	});
     });
 }
