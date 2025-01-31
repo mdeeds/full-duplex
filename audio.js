@@ -65,7 +65,11 @@ class AudioManager extends EventTarget {
 	if (this.isRecording) {
 	    event.target.innerHTML = 'Record';
 	    this.dispatchEvent(new CustomEvent('recordingAvailable', {
-		detail: {buffer: this.recordingBuffer}}));
+		detail: {
+		    buffer: this.recordingBuffer,
+		    numSamples: this.samplesRecorded,
+		    seconds: (this.samplesRecorded / this.audioCtx.sampleRate)
+		}}));
 	    this.recordingBuffer = null;
 	    this.samplesRecorded = 0;
 	} else {

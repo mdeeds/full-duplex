@@ -58,8 +58,26 @@ function start() {
 	audioManager.addEventListener('recordingAvailable', (event) => {
 	    const buffer = event.detail.buffer;
 	    const snippetDiv = document.createElement('div');
-	    snippetDiv.textContent = `Samples: ${buffer.length}`;
+	    snippetDiv.textContent =
+		`${Math.round(1000 * event.detail.seconds)/1000}s`;
+	    const snippetButton = document.createElement('button');
+	    snippetButton.innerHTML = "&#9658;";
+	    snippetDiv.appendChild(snippetButton);
 	    audioSnippetsDiv.appendChild(snippetDiv);
+	    snippetButton.addEventListener(
+		'click',
+		() => {
+		    // Play the buffer.
+		    const audioCtx = audioManager.localOutputNode.context;
+		    const source = audioCtx.createBufferSource();
+		    const audioBuffer = audioCtx.createBuffer(
+			1, buffer.length, audioCtx.sampleRate);
+		    audioBuffer.copyToChannel(buffer, 0);
+		    source.buffer = audioBuffer;
+		    source.connect(audioManager.localOutputNode);
+		    source.start();		    
+		});
+	    
 	});
     });
 }
