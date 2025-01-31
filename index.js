@@ -22,10 +22,10 @@ function createTestToneButton(outputNode) {
     });
 }
 
-function audioBufferToWav(audioBuffer) {
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const length = audioBuffer.length * numberOfChannels * 2;
+function audioBufferToWav(float32Buffer, audioCtx) {
+    const numberOfChannels = 1
+    const sampleRate = audioCtx.sampleRate;
+    const length = float32Buffer.length * numberOfChannels * 2;
     const buffer = new ArrayBuffer(44 + length);
     const view = new DataView(buffer);
 
@@ -56,7 +56,7 @@ function audioBufferToWav(audioBuffer) {
     // Data chunk size
     view.setUint32(40, length, true);
 
-    floatTo16BitPCM(view, 44, audioBuffer);
+    floatTo16BitPCM(view, 44, float32Buffer);
     
     return buffer;
 }
@@ -64,7 +64,7 @@ function audioBufferToWav(audioBuffer) {
 
 function floatTo16BitPCM(output, offset, input) {
   for (let i = 0; i < input.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, input.getChannelData(0)[i]));
+    const s = Math.max(-1, Math.min(1, input[i]));
     output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
   }
 }
@@ -75,9 +75,9 @@ function writeString(view, offset, string) {
   }
 }
 
-
 function start() {
-    document.getElementById('startButton').addEventListener('click', async () => {
+    document.getElementById('startButton').addEventListener(
+	'click', async () => {
 	const audioDiv = document.getElementById('audioConfig');
 	audioDiv.innerHTML = '';
 
@@ -119,6 +119,9 @@ function start() {
 	    const snippetButton = document.createElement('button');
 	    snippetButton.innerHTML = "&#9658;";
 	    snippetDiv.appendChild(snippetButton);
+	    const downloadButton = document.createElement('button');
+	    downloadButton.innerHTML = '\u2B73';
+	    snippetDiv.appendChild(downloadButton);
 	    audioSnippetsDiv.appendChild(snippetDiv);
 	    snippetButton.addEventListener(
 		'click',
@@ -132,15 +135,18 @@ function start() {
 		    source.connect(audioManager.localOutputNode);
 		    source.start();		    
 		});
-	    snippetDiv.draggable = true;
-	    snippetDiv.addEventListener('dragstart', (event) => {
-		const audioCtx = audioManager.localOutputNode.context;
-		const audioBuffer = audioCtx.createBuffer(
-		    1, numSamples, audioCtx.sampleRate);
-		audioBuffer.copyToChannel(buffer, 0);
-		const wavData = audioBufferToWav(audioBuffer);
-		event.dataTransfer.setData('audio/wav', wavData);
-	    });
+	    downloadButton.addEventListener(
+		'click',
+		() => {
+		    const wavData = audioBufferToWav(buffer, audioCtx);
+		    const blob = new Blob([wavData], { type: 'audio/wav' });
+		    const url = URL.createObjectURL(blob);
+		    const a = document.createElement('a');
+		    a.href = url;
+		    a.download = 'recording.wav';
+		    a.click();
+		    URL.revokeObjectURL(url);
+		});
 
 	});
     });
