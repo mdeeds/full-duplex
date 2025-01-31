@@ -4,11 +4,15 @@ class AudioManager {
 	this.localOutputNode = null;
 	this.localInputNode = null;
 
-	this.rawInputSource = null;
+	// Maps a device ID to the AudioNode for that device.
+	this.rawInputSources = new Map();
 	this.inputDevices = [];
 	this.outputDevices = [];
+	this.isRecording = false;
+	this.recordingBuffer = null;
+	this.samplesRecorded = 0;
     }
-
+    
     ctx() {
 	return this.audioCtx;
     }
@@ -20,34 +24,77 @@ class AudioManager {
 
 
 	new VUMeter(this.localInputNode, document.body, 'mic');
-	this.localOutputVU = new VUMeter(this.localOutputNode, document.body, 'speakers');
+	this.localOutputVU = new VUMeter(
+	    this.localOutputNode, document.body, 'speakers');
 	this.localOutputNode.connect(this.audioCtx.destination);
 
 	await this.enumerateDevices();
+
+	const recordButton = document.getElementById('recordButton');
+	recordButton.addEventListener(
+	    'click', () => { this._toggleRecording(); });
+
+	// Create a worklet recorder and add it to the graph.
+	await this.audioCtx.audioWorklet.addModule('worklet-recorder.js');
+	this.workletRecorderNode = new AudioWorkletNode(
+	    this.audioCtx, 'worklet-recorder');
+	this.localInputNode.connect(this.workletRecorderNode);
+	this.workletRecorderNode.port.onmessage = (event) => {
+	    this._processRecordingData(event.data);
+	}
     }
 
-    async changeAudioInput(deviceId) {
-	const stream = await navigator.mediaDevices.getUserMedia({
-	    audio: {
-		deviceId: deviceId,
-		echoCancellation: false,
-		noiseSuppression: false,
-		autoGainControl: false,
-		latencyHint: 'low',
-	    },
-	});
-	if (!!this.rawInputSource) {
-	    this.rawInputSource.disconnect();
+    _processRecordingData(data) {
+	if (!this.isRecording) {
+	    return;
 	}
-	this.rawInputSource = this.audioCtx.createMediaStreamSource(stream);
+	if (this.samplesRecorded + data.samples.length >
+	    this.recordingBuffer.length) {
+	    // Add a second to the recording buffer.
+	    const newBuffer = new Float32Array(this.recordingBuffer.length +
+					       this.audioCtx.sampleRate);
+	    newBuffer.set(this.recordingBuffer);
+	    this.recordingBuffer = newBuffer;
+	}
+	this.recordingBuffer.set(data.samples, this.samplesRecorded);
+	this.samplesRecorded += data.length;
+    }
+    
+    _toggleRecording() {
+	if (this.isRecording) {
+	    // TODO: Raise the event with the new, complete buffer
+	    this.recordingBuffer = null;
+	} else {
+	    this.recordingBuffer = new Float32Array(this.audioCtx.sampleRate);
+	}
+	this.isRecording = !this.isRecording;
+    }
 
+    async addAudioInput(deviceId) {
+	if (!this.rawInputSources.has(deviceId)) {
+	    const stream = await navigator.mediaDevices.getUserMedia({
+		audio: {
+		    deviceId: deviceId,
+		    echoCancellation: false,
+		    noiseSuppression: false,
+		    autoGainControl: false,
+		    latencyHint: 'low',
+		},
+	    });
+	    this.rawInputSources.set(
+		deviceId, this.audioCtx.createMediaStreamSource(stream));
+	}
 	// new VUMeter(this.rawInputSource, document.body);
-
 	
-	this.rawInputSource.connect(this.localInputNode);
-	console.log(`Input device changed to ${deviceId}`);
-	this.selectedInputDevice = deviceId;
+	this.rawInputSources.get(deviceId).connect(this.localInputNode);
+	console.log(`Input device added: ${deviceId}`);
 	return;  // Explicit return so that `await` works.
+    }
+
+    async removeAudioInput(deviceId) {
+	if (this.rawInputSources.has(deviceId)) {
+	    this.rawInputSources.get(deviceId).disconnect();
+	}
     }
 
     async changeAudioOutput(deviceId) {
@@ -82,20 +129,24 @@ class AudioManager {
 	inputList.innerHTML = "<H1>Inputs</H1>";
 	div.appendChild(inputList);
 	for (const device of this.inputDevices) {
-	    const radio = document.createElement('input');
-	    radio.type = 'radio';
-	    radio.name = 'inputDevice';
-	    radio.value = device.deviceId;
-	    radio.id = `inputDevice_${device.deviceId}`;
+	    const checkbox = document.createElement('input');
+	    checkbox.type = 'checkbox';
+	    checkbox.name = 'inputDevice';
+	    checkbox.value = device.deviceId;
+	    checkbox.id = `inputDevice_${device.deviceId}`;
 	    const label = document.createElement('label');
 	    label.htmlFor = `inputDevice_${device.deviceId}`;
 	    label.textContent = device.label || device.deviceId;
-	    inputList.appendChild(radio);
+	    inputList.appendChild(checkbox);
 	    inputList.appendChild(label);
 	    inputList.appendChild(document.createElement('br'));
-	    radio.addEventListener('change', async() => {
-		console.log(`Value: ${radio.value}`);
-		await this.changeAudioInput(radio.value);
+	    checkbox.addEventListener('change', async() => {
+		console.log(`Value: ${checkbox.value}`);
+		if (checkbox.checked) {
+		    await this.addAudioInput(checkbox.value);
+		} else {
+		    await this.removeAudioInput(checkbox.value);
+		}
 	    });
 	}
     }
