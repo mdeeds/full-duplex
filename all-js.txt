@@ -7,7 +7,6 @@
     <script src="audio.js"></script>
     <script src="peer-connection.js"></script>
     <script src="index.js"></script>
-    <script src="worklet-recorder.js"></script>
   </head>
   <body onload="start()">
     <div id="audioConfig">
@@ -90,8 +89,9 @@
 ```
 
 ```js audio.js
-class AudioManager {
+class AudioManager extends EventTarget {
     constructor() {
+	super();
 	this.audioCtx = null;
 	this.localOutputNode = null;
 	this.localInputNode = null;
@@ -124,7 +124,7 @@ class AudioManager {
 
 	const recordButton = document.getElementById('recordButton');
 	recordButton.addEventListener(
-	    'click', () => { this._toggleRecording(); });
+	    'click', (event) => { this._toggleRecording(event); });
 
 	// Create a worklet recorder and add it to the graph.
 	await this.audioCtx.audioWorklet.addModule('worklet-recorder.js');
@@ -149,14 +149,22 @@ class AudioManager {
 	    this.recordingBuffer = newBuffer;
 	}
 	this.recordingBuffer.set(data.samples, this.samplesRecorded);
-	this.samplesRecorded += data.length;
+	this.samplesRecorded += data.samples.length;
     }
     
-    _toggleRecording() {
+    _toggleRecording(event) {
 	if (this.isRecording) {
-	    // TODO: Raise the event with the new, complete buffer
+	    event.target.innerHTML = 'Record';
+	    this.dispatchEvent(new CustomEvent('recordingAvailable', {
+		detail: {
+		    buffer: this.recordingBuffer,
+		    numSamples: this.samplesRecorded,
+		    seconds: (this.samplesRecorded / this.audioCtx.sampleRate)
+		}}));
 	    this.recordingBuffer = null;
+	    this.samplesRecorded = 0;
 	} else {
+	    event.target.innerHTML = 'Stop';
 	    this.recordingBuffer = new Float32Array(this.audioCtx.sampleRate);
 	}
 	this.isRecording = !this.isRecording;
@@ -405,8 +413,62 @@ function createTestToneButton(outputNode) {
     });
 }
 
+function audioBufferToWav(float32Buffer, audioCtx) {
+    const numberOfChannels = 1
+    const sampleRate = audioCtx.sampleRate;
+    const length = float32Buffer.length * numberOfChannels * 2;
+    const buffer = new ArrayBuffer(44 + length);
+    const view = new DataView(buffer);
+
+    // RIFF identifier
+    writeString(view, 0, 'RIFF');
+    // RIFF chunk size
+    view.setUint32(4, 36 + length, true);
+    // RIFF type
+    writeString(view, 8, 'WAVE');
+    // Format chunk identifier
+    writeString(view, 12, 'fmt ');
+    // Format chunk size
+    view.setUint32(16, 16, true);
+    // Format code
+    view.setUint16(20, 1, true);
+    // Number of channels
+    view.setUint16(22, numberOfChannels, true);
+    // Sample rate
+    view.setUint32(24, sampleRate, true);
+    // Byte rate (sample rate * block align)
+    view.setUint32(28, sampleRate * 2 * numberOfChannels, true);
+    // Block align (channels * bytes per sample)
+    view.setUint16(32, numberOfChannels * 2, true);
+    // Bits per sample
+    view.setUint16(34, 16, true);
+    // Data chunk identifier
+    writeString(view, 36, 'data');
+    // Data chunk size
+    view.setUint32(40, length, true);
+
+    floatTo16BitPCM(view, 44, float32Buffer);
+    
+    return buffer;
+}
+
+
+function floatTo16BitPCM(output, offset, input) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
 function start() {
-    document.getElementById('startButton').addEventListener('click', async () => {
+    document.getElementById('startButton').addEventListener(
+	'click', async () => {
 	const audioDiv = document.getElementById('audioConfig');
 	audioDiv.innerHTML = '';
 
@@ -435,11 +497,49 @@ function start() {
 	
 	peerConnection.addEventListener('peerStreamEstablished', (event) => {
             console.log('Peer stream established in index.js');
-
-	    
-	    // TODO: make the call.
 	});
-	
+
+	const audioSnippetsDiv = document.getElementById('audioSnippets');
+	audioManager.addEventListener('recordingAvailable', (event) => {
+	    const buffer = event.detail.buffer;
+	    const numSamples = event.detail.numSamples;
+	    const audioCtx = audioManager.localOutputNode.context;
+	    const snippetDiv = document.createElement('div');
+	    snippetDiv.textContent =
+		`${Math.round(1000 * event.detail.seconds)/1000}s`;
+	    const snippetButton = document.createElement('button');
+	    snippetButton.innerHTML = "&#9658;";
+	    snippetDiv.appendChild(snippetButton);
+	    const downloadButton = document.createElement('button');
+	    downloadButton.innerHTML = '\u2B73';
+	    snippetDiv.appendChild(downloadButton);
+	    audioSnippetsDiv.appendChild(snippetDiv);
+	    snippetButton.addEventListener(
+		'click',
+		() => {
+		    // Play the buffer.
+		    const source = audioCtx.createBufferSource();
+		    const audioBuffer = audioCtx.createBuffer(
+			1, buffer.length, audioCtx.sampleRate);
+		    audioBuffer.copyToChannel(buffer, 0);
+		    source.buffer = audioBuffer;
+		    source.connect(audioManager.localOutputNode);
+		    source.start();		    
+		});
+	    downloadButton.addEventListener(
+		'click',
+		() => {
+		    const wavData = audioBufferToWav(buffer, audioCtx);
+		    const blob = new Blob([wavData], { type: 'audio/wav' });
+		    const url = URL.createObjectURL(blob);
+		    const a = document.createElement('a');
+		    a.href = url;
+		    a.download = 'recording.wav';
+		    a.click();
+		    URL.revokeObjectURL(url);
+		});
+
+	});
     });
 }
 
