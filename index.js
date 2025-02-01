@@ -75,6 +75,72 @@ function writeString(view, offset, string) {
   }
 }
 
+class AudioSnippet {
+    constructor(key, buffer, numSamples, seconds, audioManager, containerDiv) {
+	this.key = key;
+	this.buffer = buffer;
+	this.numSamples = numSamples;
+	this.seconds = seconds;
+	this.audioManager = audioManager;
+	this.containerDiv = containerDiv;
+	this.snippetDiv = document.createElement('div');
+	this.snippetDiv.textContent =
+	    `${Math.round(1000 * this.seconds)/1000}s`;
+	this.snippetButton = document.createElement('button');
+	this.snippetButton.innerHTML = "&#9654;";
+	this.snippetDiv.appendChild(this.snippetButton);
+	this.downloadButton = document.createElement('button');
+	this.downloadButton.innerHTML = '\u2B73';
+	this.snippetDiv.appendChild(this.downloadButton);
+	this.containerDiv.appendChild(this.snippetDiv);
+
+	this.snippetButton.addEventListener(
+	    'click',
+	    () => {
+		this._play();
+	    });
+	this.downloadButton.addEventListener(
+	    'click',
+	    () => {
+		this._download();
+	    });
+    }
+
+    _play() {
+	// Play the buffer.
+	const audioCtx = this.audioManager.localOutputNode.context;
+	const source = audioCtx.createBufferSource();
+	const audioBuffer = audioCtx.createBuffer(
+	    1, this.buffer.length, audioCtx.sampleRate);
+	audioBuffer.copyToChannel(this.buffer, 0);
+	source.buffer = audioBuffer;
+	source.connect(this.audioManager.localOutputNode);
+	source.start();
+    }
+    
+    _download() {
+	const audioCtx = this.audioManager.localOutputNode.context;
+	const wavData = audioBufferToWav(this.buffer, audioCtx);
+	const blob = new Blob([wavData], { type: 'audio/wav' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'recording.wav';
+	a.click();
+	URL.revokeObjectURL(url);
+    }
+}
+
+function _encodeFloat32Array(float32Array) {
+    const buffer = float32Array.buffer;
+    return new Uint8Array(buffer);
+}
+
+function _decodeFloat32Array(uint8Array) {
+    const buffer = uint8Array.buffer;
+    return new Float32Array(buffer);
+}
+
 function start() {
     document.getElementById('startButton').addEventListener(
 	'click', async () => {
@@ -108,46 +174,33 @@ function start() {
             console.log('Peer stream established in index.js');
 	});
 
-	const audioSnippetsDiv = document.getElementById('audioSnippets');
-	audioManager.addEventListener('recordingAvailable', (event) => {
-	    const buffer = event.detail.buffer;
-	    const numSamples = event.detail.numSamples;
-	    const audioCtx = audioManager.localOutputNode.context;
-	    const snippetDiv = document.createElement('div');
-	    snippetDiv.textContent =
-		`${Math.round(1000 * event.detail.seconds)/1000}s`;
-	    const snippetButton = document.createElement('button');
-	    snippetButton.innerHTML = "&#9658;";
-	    snippetDiv.appendChild(snippetButton);
-	    const downloadButton = document.createElement('button');
-	    downloadButton.innerHTML = '\u2B73';
-	    snippetDiv.appendChild(downloadButton);
-	    audioSnippetsDiv.appendChild(snippetDiv);
-	    snippetButton.addEventListener(
-		'click',
-		() => {
-		    // Play the buffer.
-		    const source = audioCtx.createBufferSource();
-		    const audioBuffer = audioCtx.createBuffer(
-			1, buffer.length, audioCtx.sampleRate);
-		    audioBuffer.copyToChannel(buffer, 0);
-		    source.buffer = audioBuffer;
-		    source.connect(audioManager.localOutputNode);
-		    source.start();		    
-		});
-	    downloadButton.addEventListener(
-		'click',
-		() => {
-		    const wavData = audioBufferToWav(buffer, audioCtx);
-		    const blob = new Blob([wavData], { type: 'audio/wav' });
-		    const url = URL.createObjectURL(blob);
-		    const a = document.createElement('a');
-		    a.href = url;
-		    a.download = 'recording.wav';
-		    a.click();
-		    URL.revokeObjectURL(url);
-		});
+	const syncedDBMap = new SyncedDBMap('audioSnippets', peerConnection);
 
+	const audioSnippetsDiv = document.getElementById('audioSnippets');
+	
+	syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
+	    console.log('dataChanged event from DB');
+	    const float32Buffer =
+		  _decodeFloat32Array(event.detail.value.buffer);
+	    new AudioSnippet(
+		event.detail.key,
+		float32Buffer,
+		event.detail.value.numSamples,
+		event.detail.value.seconds,
+		audioManager,
+		audioSnippetsDiv);
+	});
+	
+	audioManager.addEventListener('recordingAvailable', async (event) => {
+	    console.log(`Recording available ${event.detail.seconds}s`);
+
+	    const dbDetail = event.detail;
+	    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
+	    await syncedDBMap.set(
+		Date.now(), {
+		    ...dbDetail,
+		});
 	});
     });
 }
+
