@@ -137,55 +137,56 @@ class AudioManager extends EventTarget {
 	const inputList = document.createElement('div');
 	inputList.innerHTML = "<H1>Inputs</H1>";
 	div.appendChild(inputList);
+
+	const select = document.createElement('select');
+	select.name = 'inputDevice';
+	select.id = 'inputDeviceSelect';
+	inputList.appendChild(select);
+
 	for (const device of this.inputDevices) {
-	    const checkbox = document.createElement('input');
-	    checkbox.type = 'checkbox';
-	    checkbox.name = 'inputDevice';
-	    checkbox.value = device.deviceId;
-	    checkbox.id = `inputDevice_${device.deviceId}`;
-	    const label = document.createElement('label');
-	    label.htmlFor = `inputDevice_${device.deviceId}`;
-	    label.textContent = device.label || device.deviceId;
-	    inputList.appendChild(checkbox);
-	    inputList.appendChild(label);
-	    inputList.appendChild(document.createElement('br'));
-	    checkbox.addEventListener('change', async() => {
-		console.log(`Value: ${checkbox.value}`);
-		if (checkbox.checked) {
-		    await this.addAudioInput(checkbox.value);
-		} else {
-		    await this.removeAudioInput(checkbox.value);
-		}
-	    });
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
 	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    // Remove all existing inputs
+	    for (const device of this.rawInputSources.keys()) {
+		await this.removeAudioInput(device);
+	    }
+	    await this.addAudioInput(select.value);
+	});
     }
 
     outputSelector(div) {
 	const outputList = document.createElement('div');
 	outputList.innerHTML = "<H2>Outputs</H2>"
 	div.appendChild(outputList);
+
+	const select = document.createElement('select');
+	select.name = 'outputDevice';
+	select.id = 'outputDeviceSelect';
+	outputList.appendChild(select);
+
 	for (const device of this.outputDevices) {
-	    const radio = document.createElement('input');
-	    radio.type = 'radio';
-	    radio.name = 'outputDevice';
-	    radio.value = device.deviceId;
-	    radio.id = `outputDevice_${device.deviceId}`;
-	    const label = document.createElement('label');
-	    label.htmlFor = `outputDevice_${device.deviceId}`;
-	    label.textContent = device.label || device.deviceId;
-	    outputList.appendChild(radio);
-	    outputList.appendChild(label);
-	    outputList.appendChild(document.createElement('br'));
-	    radio.addEventListener('change', async() => {
-		console.log(`Value: ${radio.value}`);
-		await this.changeAudioOutput(radio.value);
-	    });
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
 	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    await this.changeAudioOutput(select.value);
+	});
     }
 }
 
 class GainController {
-    constructor(inputNode, outputNode, inputPeerNode, outputPeerNode, parentDiv) {
+    constructor(inputNode, outputNode, inputPeerNode, outputPeerNode,
+		parentDiv) {
         this.inputNode = inputNode;
         this.outputNode = outputNode;
         this.inputPeerNode = inputPeerNode;
