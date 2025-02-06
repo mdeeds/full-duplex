@@ -479,7 +479,7 @@ class AudioSnippet {
 	this.snippetDiv.textContent =
 	    `${Math.round(1000 * this.seconds)/1000}s`;
 	this.snippetButton = document.createElement('button');
-	this.snippetButton.innerHTML = "►";
+	this.snippetButton.innerHTML = "&#9654;";
 	this.snippetDiv.appendChild(this.snippetButton);
 	this.downloadButton = document.createElement('button');
 	this.downloadButton.innerHTML = '\u2B73';
@@ -523,6 +523,15 @@ class AudioSnippet {
     }
 }
 
+function _encodeFloat32Array(float32Array) {
+    const buffer = float32Array.buffer;
+    return new Uint8Array(buffer);
+}
+
+function _decodeFloat32Array(uint8Array) {
+    const buffer = uint8Array.buffer;
+    return new Float32Array(buffer);
+}
 
 function start() {
     document.getElementById('startButton').addEventListener(
@@ -563,9 +572,11 @@ function start() {
 	
 	syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
 	    console.log('dataChanged event from DB');
+	    const float32Buffer =
+		  _decodeFloat32Array(event.detail.value.buffer);
 	    new AudioSnippet(
 		event.detail.key,
-		event.detail.value.buffer,
+		float32Buffer,
 		event.detail.value.numSamples,
 		event.detail.value.seconds,
 		audioManager,
@@ -574,9 +585,12 @@ function start() {
 	
 	audioManager.addEventListener('recordingAvailable', async (event) => {
 	    console.log(`Recording available ${event.detail.seconds}s`);
+
+	    const dbDetail = event.detail;
+	    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
 	    await syncedDBMap.set(
 		Date.now(), {
-		    ...event.detail,
+		    ...dbDetail,
 		});
 	});
     });
@@ -993,13 +1007,17 @@ class PeerConnection extends EventTarget {
 
     _addConnHandlers() {
 	this.conn.on('data', (data) => {
-	    console.log('Data reached Peer Connection');
+	    console.log('Connection data');
 	    console.log(data);
 	    this.dispatchEvent(new CustomEvent('remoteDataReceived',
 					       {detail: data}));
 	});
 
-	this.conn.on('close', () => console.log('Connection closed'));
+	this.conn.on('close', () => {
+	    console.log('Connection closed');
+	    console.log(
+		'TODO: if we are the peer, we need to start init again.');
+	});
 	this.conn.on('error', (err) => console.log('Connection error: ', err));
     }
     

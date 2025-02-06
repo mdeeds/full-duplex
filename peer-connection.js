@@ -70,13 +70,17 @@ class PeerConnection extends EventTarget {
 
     _addConnHandlers() {
 	this.conn.on('data', (data) => {
-	    console.log('Data reached Peer Connection');
+	    console.log('Connection data');
 	    console.log(data);
 	    this.dispatchEvent(new CustomEvent('remoteDataReceived',
 					       {detail: data}));
 	});
 
-	this.conn.on('close', () => console.log('Connection closed'));
+	this.conn.on('close', () => {
+	    console.log('Connection closed');
+	    console.log(
+		'TODO: if we are the peer, we need to start init again.');
+	});
 	this.conn.on('error', (err) => console.log('Connection error: ', err));
     }
     
