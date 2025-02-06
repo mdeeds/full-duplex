@@ -1,8 +1,200 @@
+```css style.css
+/* style.css */
+
+body {
+  font-family: sans-serif;
+  background-color: #FAFAFA; /* Lighter Gray Background */
+  color: #333; /* Dark Gray Text */
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+/* Reduced overall container width and centered */
+#audioConfig,
+#peerStatus,
+#gainController,
+#recordingControls,
+#audioSnippets {
+  max-width: 700px; /* Limit width for readability */
+  margin: 20px auto; /* Center the containers */
+  padding: 20px;
+  background-color: #fff; /* White panels */
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05); /* Softer shadow */
+}
+
+/* Typography */
+h1, h2 {
+    color: #B19CD9;
+  font-weight: 600;
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+  font-weight: 500;
+}
+
+/* Form Elements */
+select,
+input[type="range"] {
+  width: 300px;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: block; /* Ensure it respects margins */
+}
+
+button {
+    background-color: #B19CD9; /* Desaturated Lavender Buttons */
+  color: white;
+  padding: 4px 7px;
+  border: solid 1px #512DA8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #512DA8; /* Darker Purple on Hover */
+}
+
+/* VU Meter */
+.vu-meter-container {
+  margin-bottom: 15px;
+}
+
+.vu-meter-label {
+  display: inline-block;
+  margin-right: 10px;
+  color: #777;
+  font-size: 13px;
+}
+
+.vu-meter {
+  width: 100%;
+  height: 12px;
+  background-color: #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.vu-meter-bar {
+  height: 100%;
+  background-color: #4FC3F7; /* Brighter Blue VU Meter Bar */
+  width: 0;
+  transition: width 0.1s ease;
+}
+
+/* Added some spacing for readability */
+#audioConfig > *,
+#peerStatus > *,
+#gainController > *,
+#recordingControls > *,
+#audioSnippets > * {
+  margin-bottom: 15px;
+}
+
+```
+
+```css style.css~
+/* style.css */
+
+body {
+  font-family: sans-serif;
+  background-color: #F0F0F0; /* Light Gray Background */
+  color: #333; /* Dark Gray Text */
+  margin: 0;
+  padding: 0;
+}
+
+#audioConfig,
+#peerStatus,
+#gainController,
+#recordingControls,
+#audioSnippets {
+  margin: 20px;
+  padding: 20px;
+  background-color: #fff; /* White panels */
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Typography */
+h1, h2 {
+  color: #B19CD9; /* Desaturated Lavender Headings */
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+/* Form Elements */
+select,
+input[type="range"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #B19CD9; /* Desaturated Lavender Buttons */
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #9575CD; /* Darker Lavender on Hover */
+}
+
+/* VU Meter */
+.vu-meter-container {
+  margin-bottom: 10px;
+}
+
+.vu-meter-label {
+  display: inline-block;
+  margin-right: 5px;
+  color: #777;
+}
+
+.vu-meter {
+  width: 100%;
+  height: 10px;
+  background-color: #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vu-meter-bar {
+  height: 100%;
+  background-color: #81D4FA; /* Light Blue VU Meter Bar */
+  width: 0;
+  transition: width 0.1s ease;
+}
+
+```
+
 ```html index.html
 <!DOCTYPE html>
 <html>
   <head>
     <title>Audio Device Selection</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="audio.js"></script>
     <script src="indexed-db-map.js"></script>
@@ -205,6 +397,7 @@ class AudioManager extends EventTarget {
 	}
 
 	await this.audioCtx.setSinkId(deviceId);
+	this.localOutputNode.connect(this.audioCtx.destination);
 	console.log(`Output device changed to: ${deviceId}`);
 	return;  // Explicit return so that `await` works.
     }
@@ -226,58 +419,59 @@ class AudioManager extends EventTarget {
     }
 
     inputSelector(div) {
-	const inputList = document.createElement('div');
-	inputList.innerHTML = "<H1>Inputs</H1>";
+	const inputList = document.createElement('span');
+	inputList.innerHTML = "Audio Source (mic): ";
 	div.appendChild(inputList);
+
+	const select = document.createElement('select');
+	select.name = 'inputDevice';
+	select.id = 'inputDeviceSelect';
+	inputList.appendChild(select);
+
 	for (const device of this.inputDevices) {
-	    const checkbox = document.createElement('input');
-	    checkbox.type = 'checkbox';
-	    checkbox.name = 'inputDevice';
-	    checkbox.value = device.deviceId;
-	    checkbox.id = `inputDevice_${device.deviceId}`;
-	    const label = document.createElement('label');
-	    label.htmlFor = `inputDevice_${device.deviceId}`;
-	    label.textContent = device.label || device.deviceId;
-	    inputList.appendChild(checkbox);
-	    inputList.appendChild(label);
-	    inputList.appendChild(document.createElement('br'));
-	    checkbox.addEventListener('change', async() => {
-		console.log(`Value: ${checkbox.value}`);
-		if (checkbox.checked) {
-		    await this.addAudioInput(checkbox.value);
-		} else {
-		    await this.removeAudioInput(checkbox.value);
-		}
-	    });
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
 	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    // Remove all existing inputs
+	    for (const device of this.rawInputSources.keys()) {
+		await this.removeAudioInput(device);
+	    }
+	    await this.addAudioInput(select.value);
+	});
     }
 
     outputSelector(div) {
-	const outputList = document.createElement('div');
-	outputList.innerHTML = "<H2>Outputs</H2>"
+	const outputList = document.createElement('span');
+	outputList.innerHTML = "Audio destination (headphones):"
 	div.appendChild(outputList);
+
+	const select = document.createElement('select');
+	select.name = 'outputDevice';
+	select.id = 'outputDeviceSelect';
+	outputList.appendChild(select);
+
 	for (const device of this.outputDevices) {
-	    const radio = document.createElement('input');
-	    radio.type = 'radio';
-	    radio.name = 'outputDevice';
-	    radio.value = device.deviceId;
-	    radio.id = `outputDevice_${device.deviceId}`;
-	    const label = document.createElement('label');
-	    label.htmlFor = `outputDevice_${device.deviceId}`;
-	    label.textContent = device.label || device.deviceId;
-	    outputList.appendChild(radio);
-	    outputList.appendChild(label);
-	    outputList.appendChild(document.createElement('br'));
-	    radio.addEventListener('change', async() => {
-		console.log(`Value: ${radio.value}`);
-		await this.changeAudioOutput(radio.value);
-	    });
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
 	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    await this.changeAudioOutput(select.value);
+	});
     }
 }
 
 class GainController {
-    constructor(inputNode, outputNode, inputPeerNode, outputPeerNode, parentDiv) {
+    constructor(inputNode, outputNode, inputPeerNode, outputPeerNode,
+		parentDiv) {
         this.inputNode = inputNode;
         this.outputNode = outputNode;
         this.inputPeerNode = inputPeerNode;
