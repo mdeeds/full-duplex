@@ -113,6 +113,7 @@ class AudioManager extends EventTarget {
 	}
 
 	await this.audioCtx.setSinkId(deviceId);
+	this.localOutputNode.connect(this.audioCtx.destination);
 	console.log(`Output device changed to: ${deviceId}`);
 	return;  // Explicit return so that `await` works.
     }
@@ -134,8 +135,8 @@ class AudioManager extends EventTarget {
     }
 
     inputSelector(div) {
-	const inputList = document.createElement('div');
-	inputList.innerHTML = "<H1>Inputs</H1>";
+	const inputList = document.createElement('span');
+	inputList.innerHTML = "Audio Source (mic): ";
 	div.appendChild(inputList);
 
 	const select = document.createElement('select');
@@ -161,8 +162,8 @@ class AudioManager extends EventTarget {
     }
 
     outputSelector(div) {
-	const outputList = document.createElement('div');
-	outputList.innerHTML = "<H2>Outputs</H2>"
+	const outputList = document.createElement('span');
+	outputList.innerHTML = "Audio destination (headphones):"
 	div.appendChild(outputList);
 
 	const select = document.createElement('select');
