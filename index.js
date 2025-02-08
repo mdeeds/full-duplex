@@ -159,6 +159,13 @@ function start() {
 
 	    createTestToneButton(audioManager.localSelector.outputNode);
 
+	    const gainController = new GainController(
+		audioManager.localSelector.inputNode,
+		audioManager.localSelector.outputNode,
+		peerInputNode, peerOutputNode,
+		audioManager.dawSelector.inputNode,
+		audioManager.dawSelector.outputNode);
+
 	    // Attempt to establish the peer connection.
 	    const peerStatus = document.getElementById('peerStatus');
 	    const peerConnection = new PeerConnection(

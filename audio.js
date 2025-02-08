@@ -42,7 +42,6 @@ class AudioManager extends EventTarget {
 	    document.getElementById('dawIO'),
 	    "DAW send: ", "DAW return:", this.audioCtx);
 	await this.dawSelector.initialize();
-	
     }
 
     _processRecordingData(data) {
@@ -82,44 +81,43 @@ class AudioManager extends EventTarget {
 
 class GainController {
     constructor(inputNode, outputNode, inputPeerNode, outputPeerNode,
-		parentDiv) {
+		sendDawNode, returnDawNode) {
         this.inputNode = inputNode;
         this.outputNode = outputNode;
         this.inputPeerNode = inputPeerNode;
         this.outputPeerNode = outputPeerNode;
-        this.parentDiv = parentDiv;
+	this.sendDawNode = sendDawNode;
+	this.returnDawNode = returnDawNode;
+	
         this.audioContext = inputNode.context;
 
-	this.parentDiv.innerHTML = "<H1>Monitoring</H1>";
+	// First wire up the managed connections
+        const inputToOutputGain = this.audioContext.createGain();
+	this.inputNode.connect(inputToOutputGain);
+	inputToOutputGain.connect(this.outputNode);
+	this._wireCheckbox(document.getElementById('localMonitor'),
+		     inputToOutputGain);
 
-        this.inputToOutputGain = this.audioContext.createGain();
-        this.inputToPeerOutputGain = this.audioContext.createGain();
-        this.peerInputToOutputGain = this.audioContext.createGain();
-        this.peerInputToPeerOutputGain = this.audioContext.createGain();
+	const inputToDawSend = this.audioContext.createGain();
+	this.inputNode.connect(inputToDawSend);
+	inputToDawSend.connect(this.sendDawNode);
+	const peerToDawSend = this.audioContext.createGain();
+	this.inputPeerNode.connect(peerToDawSend);
+	peerToDawSend.connect(this.sendDawNode);
+	this._wireToggle(document.getElementById('dawSource'),
+			{peer: peerToDawSend,
+			 local: inputToDawSend});
 
-        this.inputNode.connect(this.inputToOutputGain);
-        this.inputToOutputGain.connect(this.outputNode);
+	const peerToOutput = this.audioContext.createGain();
+	this.inputPeerNode.connect(peerToOutput);
+	peerToOutput.connect(this.outputNode);
+	this._wireCheckbox(document.getElementById('peerMonitor'),
+			  peerToOutput);
 
-        this.inputNode.connect(this.inputToPeerOutputGain);
-        this.inputToPeerOutputGain.connect(this.outputPeerNode);
-
-        this.inputPeerNode.connect(this.peerInputToOutputGain);
-        this.peerInputToOutputGain.connect(this.outputNode);
-
-        this.inputPeerNode.connect(this.peerInputToPeerOutputGain);
-        this.peerInputToPeerOutputGain.connect(this.outputPeerNode);
-
-        this._createSlider("Input to Output Gain",
-			   this.inputToOutputGain, -30);
-        this._createSlider("Input to Peer Output Gain",
-			   this.inputToPeerOutputGain, 0);
-        this._createSlider("Peer Input to Output Gain",
-			   this.peerInputToOutputGain, 0);
-        this._createSlider("Peer Input to Peer Output Gain",
-			   this.peerInputToPeerOutputGain, -30);
-
-	new VUMeter(this.outputPeerNode, document.body, 'send');
-	new VUMeter(this.inputPeerNode, document.body, 'recieve');
+	// Wire all static connections
+	this.inputNode.connect(this.outputPeerNode);
+	this.returnDawNode.connect(this.outputPeerNode);
+	this.returnDawNode.connect(this.outputNode);
     }
 
     dbToGain(x) {
@@ -147,6 +145,20 @@ class GainController {
         container.appendChild(label);
         container.appendChild(slider);
         this.parentDiv.appendChild(container);
+    }
+
+    _wireToggle(container, gains) {
+	container.addEventListener('change', (event) => {
+	    for (const key in gains) {
+		gains[key].gain.value = (key === event.target.value) ? 1 : 0;
+	    }
+	});
+    }
+
+    _wireCheckbox(checkbox, gainNode) {
+	checkbox.addEventListener('change', (event) => {
+	    gainNode.gain.value = event.target.checked ? 1 : 0;
+	});
     }
 }
 
