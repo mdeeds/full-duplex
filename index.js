@@ -63,16 +63,16 @@ function audioBufferToWav(float32Buffer, audioCtx) {
 
 
 function floatTo16BitPCM(output, offset, input) {
-  for (let i = 0; i < input.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-  }
+    for (let i = 0; i < input.length; i++, offset += 2) {
+	const s = Math.max(-1, Math.min(1, input[i]));
+	output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
 }
 
 function writeString(view, offset, string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
+    for (let i = 0; i < string.length; i++) {
+	view.setUint8(offset + i, string.charCodeAt(i));
+    }
 }
 
 class AudioSnippet {
@@ -142,65 +142,76 @@ function _decodeFloat32Array(uint8Array) {
 }
 
 function start() {
+    console.log('Setting up start logic.');
     document.getElementById('startButton').addEventListener(
 	'click', async () => {
-	const audioDiv = document.getElementById('audioConfig');
-	audioDiv.innerHTML = '';
+	    console.log('Start clicked');
+	    const audioDiv = document.getElementById('audioConfig');
+	    audioDiv.innerHTML = '';
 
-	const audioManager = new AudioManager();
-	await audioManager.initialize();
-	audioManager.inputSelector(audioDiv);
-	audioManager.outputSelector(audioDiv);
+	    const audioManager = new AudioManager();
+	    await audioManager.initialize();
+	    
+	    console.log('Creating input selector.');
+	    const micSelector = new AudioDeviceSelector(
+		audioDiv, "Audio Source (mic): ",
+		"Audio destination (headphones):", audioManager.ctx());
 
-	// Create a couple of nodes we will use to manage the transient connections
-	// with our peer.
-	const peerInputNode = audioManager.ctx().createGain();
-	const peerOutputNode = audioManager.ctx().createGain();
+	    // Create a couple of nodes we will use to manage the
+	    // transient connections with our peer.
+	    const peerInputNode = audioManager.ctx().createGain();
+	    const peerOutputNode = audioManager.ctx().createGain();
 
-	const gainControllerDiv = document.getElementById('gainController');
-	const gainController = new GainController(
-	    audioManager.localInputNode, audioManager.localOutputNode,
-	    peerInputNode, peerOutputNode,
-	    gainControllerDiv);
+	    const gainControllerDiv = document.getElementById('gainController');
+	    const gainController = new GainController(
+		micSelector.inputNode, audioManager.localOutputNode,
+		peerInputNode, peerOutputNode,
+		gainControllerDiv);
 
-	createTestToneButton(audioManager.localOutputNode);
+	    createTestToneButton(audioManager.localOutputNode);
 
-	// Attempt to establish the peer connection.
-	const peerStatus = document.getElementById('peerStatus');
-	const peerConnection = new PeerConnection(
-	    "HelloTwinZ2", peerInputNode, peerOutputNode);
-	
-	peerConnection.addEventListener('peerStreamEstablished', (event) => {
-            console.log('Peer stream established in index.js');
-	});
+	    // Attempt to establish the peer connection.
+	    const peerStatus = document.getElementById('peerStatus');
+	    const peerConnection = new PeerConnection(
+		"HelloTwinZ2", peerInputNode, peerOutputNode);
+	    
+	    peerConnection.addEventListener(
+		'peerStreamEstablished',
+		(event) => {
+		    console.log('Peer stream established in index.js');
+		});
 
-	const syncedDBMap = new SyncedDBMap('audioSnippets', peerConnection);
+	    const syncedDBMap =
+		  new SyncedDBMap('audioSnippets', peerConnection);
 
-	const audioSnippetsDiv = document.getElementById('audioSnippets');
-	
-	syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
-	    console.log('dataChanged event from DB');
-	    const float32Buffer =
-		  _decodeFloat32Array(event.detail.value.buffer);
-	    new AudioSnippet(
-		event.detail.key,
-		float32Buffer,
-		event.detail.value.numSamples,
-		event.detail.value.seconds,
-		audioManager,
-		audioSnippetsDiv);
-	});
-	
-	audioManager.addEventListener('recordingAvailable', async (event) => {
-	    console.log(`Recording available ${event.detail.seconds}s`);
+	    const audioSnippetsDiv = document.getElementById('audioSnippets');
+	    
+	    syncedDBMap.localMap.addEventListener(
+		'dataChanged',
+		(event) => {
+		    console.log('dataChanged event from DB');
+		    const float32Buffer =
+			  _decodeFloat32Array(event.detail.value.buffer);
+		    new AudioSnippet(
+			event.detail.key,
+			float32Buffer,
+			event.detail.value.numSamples,
+			event.detail.value.seconds,
+			audioManager,
+			audioSnippetsDiv);
+		});
+	    
+	    audioManager.addEventListener(
+		'recordingAvailable',
+		async (event) => {
+		    console.log(`Recording available ${event.detail.seconds}s`);
 
-	    const dbDetail = event.detail;
-	    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
-	    await syncedDBMap.set(
-		Date.now(), {
-		    ...dbDetail,
+		    const dbDetail = event.detail;
+		    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
+		    await syncedDBMap.set(
+			Date.now(), {
+			    ...dbDetail,
+			});
 		});
 	});
-    });
 }
-
