@@ -179,10 +179,6 @@ button:hover {
 }
 
 /* Switch Styles (for Local Mic Monitor) */
-input + .slider {
-  width: 60px;
-}
-
 .switch {
   position: relative;
   display: inline-block;
@@ -226,6 +222,10 @@ input:checked + .slider {
 
 input:focus + .slider {
   box-shadow: 0 0 1px #B19CD9;
+}
+
+input + .slider {
+  width: 60px;
 }
 
 input:checked + .slider:before {
