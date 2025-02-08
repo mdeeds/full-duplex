@@ -2,28 +2,26 @@
 
 body {
   font-family: sans-serif;
-  background-color: #FAFAFA; /* Lighter Gray Background */
-  color: #333; /* Dark Gray Text */
+  background-color: #FAFAFA;
+  color: #333;
   margin: 0;
   padding: 0;
   line-height: 1.6;
 }
 
-/* Reduced overall container width and centered */
 #audioConfig,
 #peerStatus,
 #gainController,
 #recordingControls,
 #audioSnippets {
-  max-width: 700px; /* Limit width for readability */
-  margin: 20px auto; /* Center the containers */
-  padding: 20px;
-  background-color: #fff; /* White panels */
+  max-width: 700px;
+  margin: 10px auto; /* Reduced margin */
+  padding: 15px; /* Reduced padding */
+  background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05); /* Softer shadow */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* Adjusted shadow */
 }
 
-/* Typography */
 h1, h2 {
     color: #B19CD9;
   font-weight: 600;
@@ -32,25 +30,24 @@ h1, h2 {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px; /* Reduced margin */
   color: #555;
   font-weight: 500;
 }
 
-/* Form Elements */
 select,
 input[type="range"] {
   width: 300px;
-  padding: 10px;
-  margin-bottom: 15px;
+  padding: 8px; /* Reduced padding */
+  margin-bottom: 10px; /* Reduced margin */
   border: 1px solid #ddd;
   border-radius: 6px;
   box-sizing: border-box;
-  display: block; /* Ensure it respects margins */
+  display: block;
 }
 
 button {
-    background-color: #B19CD9; /* Desaturated Lavender Buttons */
+    background-color: #B19CD9;
   color: white;
   padding: 4px 7px;
   border: solid 1px #512DA8;
@@ -60,41 +57,68 @@ button {
 }
 
 button:hover {
-  background-color: #512DA8; /* Darker Purple on Hover */
+  background-color: #512DA8;
 }
 
-/* VU Meter */
 .vu-meter-container {
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced margin */
 }
 
 .vu-meter-label {
   display: inline-block;
-  margin-right: 10px;
+  margin-right: 8px; /* Reduced margin */
   color: #777;
   font-size: 13px;
 }
 
 .vu-meter {
   width: 100%;
-  height: 12px;
+  height: 10px; /* Reduced height */
   background-color: #eee;
-  border-radius: 6px;
+  border-radius: 5px; /* Reduced border radius */
   overflow: hidden;
 }
 
 .vu-meter-bar {
   height: 100%;
-  background-color: #4FC3F7; /* Brighter Blue VU Meter Bar */
+  background-color: #4FC3F7;
   width: 0;
   transition: width 0.1s ease;
 }
 
-/* Added some spacing for readability */
+/* LED Styles */
+.red-on {
+  background-color: #E57373; /* Darker Red */
+  box-shadow: 0 0 5px #E57373; /* Glow effect */
+}
+
+.red-off {
+  background-color: #F44336; /* Slightly desaturated */
+}
+
+.yellow-on {
+  background-color: #FFB74D; /* Darker Yellow */
+  box-shadow: 0 0 5px #FFB74D; /* Glow effect */
+}
+
+.yellow-off {
+  background-color: #FFC107; /* Slightly desaturated */
+}
+
+.green-on {
+  background-color: #81C784; /* Darker Green */
+  box-shadow: 0 0 5px #81C784; /* Glow effect */
+}
+
+.green-off {
+  background-color: #4CAF50; /* Slightly desaturated */
+}
+
+/* Reduced spacing */
 #audioConfig > *,
 #peerStatus > *,
 #gainController > *,
 #recordingControls > *,
 #audioSnippets > * {
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced margin */
 }
