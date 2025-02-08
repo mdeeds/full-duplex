@@ -11,47 +11,52 @@
     <script src="index.js"></script>
   </head>
   <body onload="start()">
-
-    <div id="routingControls">
-      <h2>Routing & Monitoring</h2>
-      <div class="control-group">
-	<label for="dawSource">Send to DAW:</label>
-	<div class="toggle-switch">
-	  <input type="radio" id="dawSourceLocal" name="dawSource" value="local" checked>
-	  <label for="dawSourceLocal">Local Mic</label>
-	  <input type="radio" id="dawSourcePeer" name="dawSource" value="peer">
-	  <label for="dawSourcePeer">Peer</label>
+    <div>
+      <button id="startButton">Start</button>
+      <div id="io" class="mainSection">
+	<h2>IO</h2>
+	<div id="audioConfig">
+	  <div id='localIO'></div>
+	  <div id='dawIO'></div>
 	</div>
       </div>
-
-      <div class="control-group">
-	<label for="localMonitor">Local Mic Monitor:</label>
-	<label class="switch">
-	  <input type="checkbox" id="localMonitor">
-	  <span class="slider round"></span>
-	</label>
+      <div id="routingControls" class=mainSection>
+	<h2>Routing & Monitoring</h2>
+	<div class="control-group">
+	  <label for="dawSource">Send to DAW:</label>
+	  <div class="toggle-switch">
+	    <input type="radio" id="dawSourceLocal"
+		   name="dawSource" value="local" checked>
+	    <label for="dawSourceLocal">Local Mic</label>
+	    <input type="radio" id="dawSourcePeer"
+		   name="dawSource" value="peer">
+	    <label for="dawSourcePeer">Peer</label>
+	  </div>
+	</div>
+	<div>
+	  <div class="control-group">
+	    <label for="localMonitor">Local Mic Monitor:</label>
+	    <label class="switch">
+	      <input type="checkbox" id="localMonitor">
+	      <span class="slider round"></span>
+	    </label>
+	  </div>
+	  
+	  <div class="control-group">
+	    <label for="localMonitor">Peer Monitor:</label>
+	    <label class="switch">
+	      <input type="checkbox" id="peerMonitor" checked=true>
+	      <span class="slider round"></span>
+	    </label>
+	  </div>
+	</div>
       </div>
+      <div id='peerStatus' class='mainSection'></div>
+      <div id='gainController' class="mainSection"></div>
 
-      <div class="control-group">
-	<label for="localMonitor">Peer Monitor:</label>
-	<label class="switch">
-	  <input type="checkbox" id="peerMonitor" checked=true>
-	  <span class="slider round"></span>
-	</label>
+      <div id='recordingControls' class="mainSection">
+	<button id='recordButton'>Record</button>
       </div>
-    </div>
-
-
-
-    <div id="audioConfig">
-      <button id="startButton">Start</button>
-    </div>
-    <div id='peerStatus'></div>
-    <div id='gainController'></div>
-
-    <div id='recordingControls'>
-      <button id='recordButton'>Record</button>
-    </div>
-    <div id='audioSnippets'></div>
+      <div id='audioSnippets' class="mainSection"></div>
   </body>
 </html>

@@ -9,17 +9,31 @@ body {
   line-height: 1.6;
 }
 
+.mainSection {
+  max-width: 700px;
+  margin: 10px auto;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
 #audioConfig,
 #peerStatus,
 #gainController,
 #recordingControls,
 #audioSnippets {
-  max-width: 700px;
-  margin: 10px auto; /* Reduced margin */
-  padding: 15px; /* Reduced padding */
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* Adjusted shadow */
+}
+
+#audioConfig {
+    display: flex;
+    flex-direction: row;
+}
+
+#localIO,
+#dawIO {
+    flex: 1; /* Distribute space equally between the two */
+    margin-right: 10px; /* Add some spacing between the two */
 }
 
 h1, h2 {
@@ -124,19 +138,6 @@ button:hover {
 }
 
 /* Add to your existing style.css */
-
-#routingControls {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-#routingControls h2 {
-  font-size: 1.2em;
-  margin-top: 0;
-  margin-bottom: 10px;
-}
 
 .control-group {
   margin-bottom: 10px;

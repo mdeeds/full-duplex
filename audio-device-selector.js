@@ -7,59 +7,61 @@ class AudioDeviceSelector {
 	this.outputLabel = outputLabel;
 	this.inputDevices = [];
 	this.outputDevices = [];
-	// Initial input and output nodes should connect to default input
-	// and output sources.
+
+	this.currentOutputDeviceId = '';
+	
 	this.inputNode = audioCtx.createGain();
 	this.outputNode = audioCtx.createGain();
-	this.outputNode.connect(audioCtx.destination);
 
-	this.rawInputSources = new Map();
-
-	this._initialize();
+	new VUMeter(this.inputNode, document.body, inputLabel);
+	new VUMeter(this.outputNode, document.body, outputLabel);
+	
+	this._rawInputSourceNode;
     }
 
-    async _initialize() {
+    async initialize() {
 	await this.enumerateDevices();
 	this.inputSelector(this.containerDiv);
 	this.outputSelector(this.containerDiv);
+
+	this.outputStream = this._audioCtx.createMediaStreamDestination();
+	this.outputNode.connect(this.outputStream);
+
+	this._outputContext = new AudioContext();
+	this.outputSink = this._outputContext.createMediaStreamSource(
+	    this.outputStream.stream);
+	this.outputSink.connect(this._outputContext.destination);
     }
     
-    async addAudioInput(deviceId) {
-	if (!this.rawInputSources.has(deviceId)) {
-	    const stream = await navigator.mediaDevices.getUserMedia({
-		audio: {
-		    deviceId: deviceId,
-		    echoCancellation: false,
-		    noiseSuppression: false,
-		    autoGainControl: false,
-		    latencyHint: 'low',
-		},
-	    });
-	    this.rawInputSources.set(
-		deviceId, this._audioCtx.createMediaStreamSource(stream));
+    async setAudioInput(deviceId) {
+	const stream = await navigator.mediaDevices.getUserMedia({
+	    audio: {
+		deviceId: deviceId,
+		echoCancellation: false,
+		noiseSuppression: false,
+		autoGainControl: false,
+		latencyHint: 'low',
+	    },
+	});
+	if (!!this._rawInputSourceNode) {
+	    this._rawInputSourceNode.disconnect();
 	}
+	this._rawInputSourceNode =
+	      this._audioCtx.createMediaStreamSource(stream);
+
 	// new VUMeter(this.rawInputSource, document.body);
 	
-	this.rawInputSources.get(deviceId).connect(this.inputNode);
+	this._rawInputSourceNode.connect(this.inputNode);
 	console.log(`Input device added: ${deviceId}`);
 	return;  // Explicit return so that `await` works.
     }
 
-    async removeAudioInput(deviceId) {
-	if (this.rawInputSources.has(deviceId)) {
-	    this.rawInputSources.get(deviceId).disconnect();
-	}
-    }
-
-    async changeAudioOutput(deviceId) {
-	if (!this._audioCtx || !this.outputNode) {
+    async setAudioOutput(deviceId) {
+	if (!this._outputContext) {
 	    console.error("AudioContext or localOutputNode not initialized.");
 	    return;
 	}
-
-	await this._audioCtx.setSinkId(deviceId);
-	this.outputNode.connect(this._audioCtx.destination);
-	console.log(`Output device changed to: ${deviceId}`);
+	await this._outputContext.setSinkId(deviceId);
 	return;  // Explicit return so that `await` works.
     }
 
@@ -70,8 +72,7 @@ class AudioDeviceSelector {
 	const inputDevices = devices.filter(
 	    device => device.kind === 'audioinput');
 	const outputDevices = devices.filter(
-	    device => device.kind === 'audiooutput' &&
-		device.deviceId !== 'default');
+	    device => device.kind === 'audiooutput');
 	this.inputDevices = inputDevices;
 	this.outputDevices = outputDevices;
 
@@ -99,11 +100,7 @@ class AudioDeviceSelector {
 
 	select.addEventListener('change', async() => {
 	    console.log(`Value: ${select.value}`);
-	    // Remove all existing inputs
-	    for (const device of this.rawInputSources.keys()) {
-		await this.removeAudioInput(device);
-	    }
-	    await this.addAudioInput(select.value);
+	    await this.setAudioInput(select.value);
 	});
     }
 
@@ -127,7 +124,7 @@ class AudioDeviceSelector {
 
 	select.addEventListener('change', async() => {
 	    console.log(`Value: ${select.value}`);
-	    await this.changeAudioOutput(select.value);
+	    await this.setAudioOutput(select.value);
 	});
     }
 }

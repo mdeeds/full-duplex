@@ -2,12 +2,14 @@ class AudioManager extends EventTarget {
     constructor() {
 	super();
 	this.audioCtx = null;
-	this.localOutputNode = null;
 	this.localInputNode = null;
 
 	this.isRecording = false;
 	this.recordingBuffer = null;
 	this.samplesRecorded = 0;
+
+	this.localSelector = undefined;
+	this.dawSelector = undefined;
     }
     
     ctx() {
@@ -16,26 +18,31 @@ class AudioManager extends EventTarget {
 
     async initialize() {
 	this.audioCtx = new AudioContext();
-	this.localOutputNode = this.audioCtx.createGain();
-	this.localInputNode = this.audioCtx.createGain();
-
-	new VUMeter(this.localInputNode, document.body, 'mic');
-	this.localOutputVU = new VUMeter(
-	    this.localOutputNode, document.body, 'speakers');
-	this.localOutputNode.connect(this.audioCtx.destination);
-
 	const recordButton = document.getElementById('recordButton');
 	recordButton.addEventListener(
 	    'click', (event) => { this._toggleRecording(event); });
+
+	console.log('Creating input selectors.');
+	this.localSelector = new AudioDeviceSelector(
+	    document.getElementById('localIO'),
+	    "Audio Source (mic): ", "Audio destination (headphones):",
+	    this.audioCtx);
+	await this.localSelector.initialize();
 
 	// Create a worklet recorder and add it to the graph.
 	await this.audioCtx.audioWorklet.addModule('worklet-recorder.js');
 	this.workletRecorderNode = new AudioWorkletNode(
 	    this.audioCtx, 'worklet-recorder');
-	this.localInputNode.connect(this.workletRecorderNode);
 	this.workletRecorderNode.port.onmessage = (event) => {
 	    this._processRecordingData(event.data);
 	}
+	this.localSelector.inputNode.connect(this.workletRecorderNode);
+	
+	this.dawSelector = new AudioDeviceSelector(
+	    document.getElementById('dawIO'),
+	    "DAW send: ", "DAW return:", this.audioCtx);
+	await this.dawSelector.initialize();
+	
     }
 
     _processRecordingData(data) {

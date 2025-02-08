@@ -108,18 +108,18 @@ class AudioSnippet {
 
     _play() {
 	// Play the buffer.
-	const audioCtx = this.audioManager.localOutputNode.context;
+	const audioCtx = this.audioManager.ctx();
 	const source = audioCtx.createBufferSource();
 	const audioBuffer = audioCtx.createBuffer(
 	    1, this.buffer.length, audioCtx.sampleRate);
 	audioBuffer.copyToChannel(this.buffer, 0);
 	source.buffer = audioBuffer;
-	source.connect(this.audioManager.localOutputNode);
+	source.connect(this.audioManager.localSelector.outputNode);
 	source.start();
     }
     
     _download() {
-	const audioCtx = this.audioManager.localOutputNode.context;
+	const audioCtx = this.audioManager.ctx();
 	const wavData = audioBufferToWav(this.buffer, audioCtx);
 	const blob = new Blob([wavData], { type: 'audio/wav' });
 	const url = URL.createObjectURL(blob);
@@ -144,31 +144,20 @@ function _decodeFloat32Array(uint8Array) {
 function start() {
     console.log('Setting up start logic.');
     document.getElementById('startButton').addEventListener(
-	'click', async () => {
+	'click', async (event) => {
 	    console.log('Start clicked');
 	    const audioDiv = document.getElementById('audioConfig');
-	    audioDiv.innerHTML = '';
+	    event.target.remove();
 
 	    const audioManager = new AudioManager();
 	    await audioManager.initialize();
-	    
-	    console.log('Creating input selector.');
-	    const micSelector = new AudioDeviceSelector(
-		audioDiv, "Audio Source (mic): ",
-		"Audio destination (headphones):", audioManager.ctx());
-
+	    	    
 	    // Create a couple of nodes we will use to manage the
 	    // transient connections with our peer.
 	    const peerInputNode = audioManager.ctx().createGain();
 	    const peerOutputNode = audioManager.ctx().createGain();
 
-	    const gainControllerDiv = document.getElementById('gainController');
-	    const gainController = new GainController(
-		micSelector.inputNode, audioManager.localOutputNode,
-		peerInputNode, peerOutputNode,
-		gainControllerDiv);
-
-	    createTestToneButton(audioManager.localOutputNode);
+	    createTestToneButton(audioManager.localSelector.outputNode);
 
 	    // Attempt to establish the peer connection.
 	    const peerStatus = document.getElementById('peerStatus');
