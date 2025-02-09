@@ -163,8 +163,8 @@ function start() {
 		audioManager.localSelector.inputNode,
 		audioManager.localSelector.outputNode,
 		peerInputNode, peerOutputNode,
-		audioManager.dawSelector.inputNode,
-		audioManager.dawSelector.outputNode);
+		audioManager.dawSelector.outputNode,  // Send
+		audioManager.dawSelector.inputNode);  // Return
 
 	    // Attempt to establish the peer connection.
             const peerStatus = document.getElementById('peerStatus');

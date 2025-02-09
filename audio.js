@@ -25,7 +25,7 @@ class AudioManager extends EventTarget {
 	console.log('Creating input selectors.');
 	this.localSelector = new AudioDeviceSelector(
 	    document.getElementById('localIO'),
-	    "Audio Source (mic): ", "Audio destination (headphones):",
+	    "Audio Source (mic)", "Audio destination (headphones)",
 	    this.audioCtx);
 	await this.localSelector.initialize();
 
@@ -40,7 +40,7 @@ class AudioManager extends EventTarget {
 	
 	this.dawSelector = new AudioDeviceSelector(
 	    document.getElementById('dawIO'),
-	    "DAW send: ", "DAW return:", this.audioCtx);
+	    "DAW return", "DAW send", this.audioCtx);
 	await this.dawSelector.initialize();
     }
 

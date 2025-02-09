@@ -31,9 +31,17 @@ class AudioDeviceSelector {
 	this.outputSink = this._outputContext.createMediaStreamSource(
 	    this.outputStream.stream);
 	this.outputSink.connect(this._outputContext.destination);
+
+	this.setAudioInput('');
+	this.setAudioOutput('');
     }
     
     async setAudioInput(deviceId) {
+	if (!!this._rawInputSourceNode) {
+	    this._rawInputSourceNode.disconnect();
+	    this._rawInputSourceNode = null;
+	}
+	if (!deviceId) { return; }
 	const stream = await navigator.mediaDevices.getUserMedia({
 	    audio: {
 		deviceId: deviceId,
@@ -43,9 +51,6 @@ class AudioDeviceSelector {
 		latencyHint: 'low',
 	    },
 	});
-	if (!!this._rawInputSourceNode) {
-	    this._rawInputSourceNode.disconnect();
-	}
 	this._rawInputSourceNode =
 	      this._audioCtx.createMediaStreamSource(stream);
 
@@ -61,6 +66,13 @@ class AudioDeviceSelector {
 	    console.error("AudioContext or localOutputNode not initialized.");
 	    return;
 	}
+
+	if (!deviceId) {
+	    this.outputSink.disconnect(this._outputContext.destination);
+	} else {
+	    this.outputSink.connect(this._outputContext.destination);
+	}
+	
 	await this._outputContext.setSinkId(deviceId);
 	return;  // Explicit return so that `await` works.
     }
@@ -91,6 +103,13 @@ class AudioDeviceSelector {
 	select.id = 'inputDeviceSelect';
 	inputList.appendChild(select);
 
+	{
+	    const option = document.createElement('option');
+	    option.value = '';
+	    option.text = 'None';
+	    select.appendChild(option);
+	}
+	
 	for (const device of this.inputDevices) {
 	    const option = document.createElement('option');
 	    option.value = device.deviceId;
@@ -115,6 +134,13 @@ class AudioDeviceSelector {
 	select.id = 'outputDeviceSelect';
 	outputList.appendChild(select);
 
+	{
+	    const option = document.createElement('option');
+	    option.value = '';
+	    option.text = 'None';
+	    select.appendChild(option);
+	}
+	
 	for (const device of this.outputDevices) {
 	    const option = document.createElement('option');
 	    option.value = device.deviceId;
