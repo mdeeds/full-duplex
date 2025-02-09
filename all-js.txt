@@ -1,30 +1,28 @@
-```css style.css
+```css #style.css#
 /* style.css */
 
 body {
   font-family: sans-serif;
-  background-color: #FAFAFA; /* Lighter Gray Background */
-  color: #333; /* Dark Gray Text */
+  background-color: #FAFAFA;
+  color: #333;
   margin: 0;
   padding: 0;
   line-height: 1.6;
 }
 
-/* Reduced overall container width and centered */
 #audioConfig,
 #peerStatus,
 #gainController,
 #recordingControls,
 #audioSnippets {
-  max-width: 700px; /* Limit width for readability */
-  margin: 20px auto; /* Center the containers */
-  padding: 20px;
-  background-color: #fff; /* White panels */
+  max-width: 700px;
+  margin: 10px auto; /* Reduced margin */
+  padding: 15px; /* Reduced padding */
+  background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05); /* Softer shadow */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* Adjusted shadow */
 }
 
-/* Typography */
 h1, h2 {
     color: #B19CD9;
   font-weight: 600;
@@ -33,25 +31,24 @@ h1, h2 {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px; /* Reduced margin */
   color: #555;
   font-weight: 500;
 }
 
-/* Form Elements */
 select,
 input[type="range"] {
   width: 300px;
-  padding: 10px;
-  margin-bottom: 15px;
+  padding: 8px; /* Reduced padding */
+  margin-bottom: 10px; /* Reduced margin */
   border: 1px solid #ddd;
   border-radius: 6px;
   box-sizing: border-box;
-  display: block; /* Ensure it respects margins */
+  display: block;
 }
 
 button {
-    background-color: #B19CD9; /* Desaturated Lavender Buttons */
+    background-color: #B19CD9;
   color: white;
   padding: 4px 7px;
   border: solid 1px #512DA8;
@@ -61,43 +58,435 @@ button {
 }
 
 button:hover {
-  background-color: #512DA8; /* Darker Purple on Hover */
+  background-color: #512DA8;
 }
 
-/* VU Meter */
 .vu-meter-container {
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced margin */
 }
 
 .vu-meter-label {
   display: inline-block;
-  margin-right: 10px;
+  margin-right: 8px; /* Reduced margin */
   color: #777;
   font-size: 13px;
 }
 
 .vu-meter {
   width: 100%;
-  height: 12px;
+  height: 10px; /* Reduced height */
   background-color: #eee;
-  border-radius: 6px;
+  border-radius: 5px; /* Reduced border radius */
   overflow: hidden;
 }
 
 .vu-meter-bar {
   height: 100%;
-  background-color: #4FC3F7; /* Brighter Blue VU Meter Bar */
+  background-color: #4FC3F7;
   width: 0;
   transition: width 0.1s ease;
 }
 
-/* Added some spacing for readability */
+/* LED Styles */
+.red-on {
+  background-color: #E57373; /* Darker Red */
+  box-shadow: 0 0 5px #E57373; /* Glow effect */
+}
+
+.red-off {
+  background-color: #F44336; /* Slightly desaturated */
+}
+
+.yellow-on {
+  background-color: #FFB74D; /* Darker Yellow */
+  box-shadow: 0 0 5px #FFB74D; /* Glow effect */
+}
+
+.yellow-off {
+  background-color: #FFC107; /* Slightly desaturated */
+}
+
+.green-on {
+  background-color: #81C784; /* Darker Green */
+  box-shadow: 0 0 5px #81C784; /* Glow effect */
+}
+
+.green-off {
+  background-color: #4CAF50; /* Slightly desaturated */
+}
+
+/* Reduced spacing */
 #audioConfig > *,
 #peerStatus > *,
 #gainController > *,
 #recordingControls > *,
 #audioSnippets > * {
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced margin */
+}
+
+/* Add to your existing style.css */
+
+#routingControls {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+#routingControls h2 {
+  font-size: 1.2em;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.control-group {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.control-group label {
+  margin-right: 10px;
+  width: 150px; /* Adjust width as needed */
+  text-align: right;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  background-color: #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.toggle-switch label {
+  padding: 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  background-color: transparent;
+  color: #555;
+  margin: 0;
+  width: 75px; /* Adjust width as needed */
+}
+
+.toggle-switch input[type="radio"] {
+  display: none;
+}
+
+.toggle-switch input[type="radio"]:checked + label {
+  background-color: #B19CD9; /* Lavender Accent */
+  color: white;
+}
+
+/* Switch Styles (for Local Mic Monitor) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #B19CD9; /* Lavender Accent */
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #B19CD9;
+}
+
+input + .slider {
+  width: 60px;
+}
+
+input:checked + .slider:before {
+  transform: translateX(32px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+```
+
+```css style.css
+/* style.css */
+
+body {
+  font-family: sans-serif;
+  background-color: #FAFAFA;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.mainSection {
+  max-width: 700px;
+  margin: 10px auto;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+#audioConfig,
+#peerStatus,
+#gainController,
+#recordingControls,
+#audioSnippets {
+}
+
+#audioConfig {
+    display: flex;
+    flex-direction: row;
+}
+
+#localIO,
+#dawIO {
+    flex: 1; /* Distribute space equally between the two */
+    margin-right: 10px; /* Add some spacing between the two */
+}
+
+h1, h2 {
+    color: #B19CD9;
+  font-weight: 600;
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 3px; /* Reduced margin */
+  color: #555;
+  font-weight: 500;
+}
+
+select,
+input[type="range"] {
+  width: 300px;
+  padding: 8px; /* Reduced padding */
+  margin-bottom: 10px; /* Reduced margin */
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: block;
+}
+
+button {
+    background-color: #B19CD9;
+  color: white;
+  padding: 4px 7px;
+  border: solid 1px #512DA8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #512DA8;
+}
+
+.vu-meter-container {
+  margin-bottom: 10px; /* Reduced margin */
+}
+
+.vu-meter-label {
+  display: inline-block;
+  margin-right: 8px; /* Reduced margin */
+  color: #777;
+  font-size: 13px;
+}
+
+.vu-meter {
+  width: 100%;
+  height: 10px; /* Reduced height */
+  background-color: #eee;
+  border-radius: 5px; /* Reduced border radius */
+  overflow: hidden;
+}
+
+.vu-meter-bar {
+  height: 100%;
+  background-color: #4FC3F7;
+  width: 0;
+  transition: width 0.1s ease;
+}
+
+/* LED Styles */
+.red-on {
+  background-color: #E57373; /* Darker Red */
+  box-shadow: 0 0 5px #E57373; /* Glow effect */
+}
+
+.red-off {
+  background-color: #F44336; /* Slightly desaturated */
+}
+
+.yellow-on {
+  background-color: #FFB74D; /* Darker Yellow */
+  box-shadow: 0 0 5px #FFB74D; /* Glow effect */
+}
+
+.yellow-off {
+  background-color: #FFC107; /* Slightly desaturated */
+}
+
+.green-on {
+  background-color: #81C784; /* Darker Green */
+  box-shadow: 0 0 5px #81C784; /* Glow effect */
+}
+
+.green-off {
+  background-color: #4CAF50; /* Slightly desaturated */
+}
+
+/* Reduced spacing */
+#audioConfig > *,
+#peerStatus > *,
+#gainController > *,
+#recordingControls > *,
+#audioSnippets > * {
+  margin-bottom: 10px; /* Reduced margin */
+}
+
+/* Add to your existing style.css */
+
+.control-group {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.control-group label {
+  margin-right: 10px;
+  width: 150px; /* Adjust width as needed */
+  text-align: right;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  background-color: #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.toggle-switch label {
+  padding: 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  background-color: transparent;
+  color: #555;
+  margin: 0;
+  width: 75px; /* Adjust width as needed */
+}
+
+.toggle-switch input[type="radio"] {
+  display: none;
+}
+
+.toggle-switch input[type="radio"]:checked + label {
+  background-color: #B19CD9; /* Lavender Accent */
+  color: white;
+}
+
+/* Switch Styles (for Local Mic Monitor) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #B19CD9; /* Lavender Accent */
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #B19CD9;
+}
+
+input + .slider {
+  width: 60px;
+}
+
+input:checked + .slider:before {
+  transform: translateX(32px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 ```
@@ -197,21 +586,59 @@ button:hover {
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="audio.js"></script>
+    <script src="audio-device-selector.js"></script>
     <script src="indexed-db-map.js"></script>
     <script src="peer-connection.js"></script>
     <script src="index.js"></script>
   </head>
   <body onload="start()">
-    <div id="audioConfig">
+    <div>
       <button id="startButton">Start</button>
-    </div>
-    <div id='peerStatus'></div>
-    <div id='gainController'></div>
+      <div id="io" class="mainSection">
+	<h2>IO</h2>
+	<div id="audioConfig">
+	  <div id='localIO'></div>
+	  <div id='dawIO'></div>
+	</div>
+      </div>
+      <div id="routingControls" class=mainSection>
+	<h2>Routing & Monitoring</h2>
+	<div class="control-group">
+	  <label for="dawSource">Send to DAW:</label>
+	  <div class="toggle-switch" id="dawSource">
+	    <input type="radio" id="dawSourceLocal"
+		   name="dawSource" value="local" checked>
+	    <label for="dawSourceLocal">Local Mic</label>
+	    <input type="radio" id="dawSourcePeer"
+		   name="dawSource" value="peer">
+	    <label for="dawSourcePeer">Peer</label>
+	  </div>
+	</div>
+	<div>
+	  <div class="control-group">
+	    <label for="localMonitor">Local Mic Monitor:</label>
+	    <label class="switch">
+	      <input type="checkbox" id="localMonitor">
+	      <span class="slider round"></span>
+	    </label>
+	  </div>
+	  
+	  <div class="control-group">
+	    <label for="localMonitor">Peer Monitor:</label>
+	    <label class="switch">
+	      <input type="checkbox" id="peerMonitor" checked=true>
+	      <span class="slider round"></span>
+	    </label>
+	  </div>
+	</div>
+      </div>
+      <div id='peerStatus' class='mainSection'></div>
+      <div id='gainController' class="mainSection"></div>
 
-    <div id='recordingControls'>
-      <button id='recordButton'>Record</button>
-    </div>
-    <div id='audioSnippets'></div>
+      <div id='recordingControls' class="mainSection">
+	<button id='recordButton'>Record</button>
+      </div>
+      <div id='audioSnippets' class="mainSection"></div>
   </body>
 </html>
 
@@ -281,21 +708,176 @@ button:hover {
 
 ```
 
+```js audio-device-selector.js
+// Handles audio input and output selection
+class AudioDeviceSelector {
+    constructor(containerDiv, inputLabel, outputLabel, audioCtx) {
+	this._audioCtx = audioCtx;
+	this.containerDiv = containerDiv;
+	this.inputLabel = inputLabel;
+	this.outputLabel = outputLabel;
+	this.inputDevices = [];
+	this.outputDevices = [];
+
+	this.currentOutputDeviceId = '';
+	
+	this.inputNode = audioCtx.createGain();
+	this.outputNode = audioCtx.createGain();
+
+	new VUMeter(this.inputNode, document.body, inputLabel);
+	new VUMeter(this.outputNode, document.body, outputLabel);
+	
+	this._rawInputSourceNode;
+    }
+
+    async initialize() {
+	await this.enumerateDevices();
+	this.inputSelector(this.containerDiv);
+	this.outputSelector(this.containerDiv);
+
+	this.outputStream = this._audioCtx.createMediaStreamDestination();
+	this.outputNode.connect(this.outputStream);
+
+	this._outputContext = new AudioContext();
+	this.outputSink = this._outputContext.createMediaStreamSource(
+	    this.outputStream.stream);
+	this.outputSink.connect(this._outputContext.destination);
+    }
+    
+    async setAudioInput(deviceId) {
+	if (!!this._rawInputSourceNode) {
+	    this._rawInputSourceNode.disconnect();
+	    this._rawInputSourceNode = null;
+	}
+	if (!deviceId) { return; }
+	const stream = await navigator.mediaDevices.getUserMedia({
+	    audio: {
+		deviceId: deviceId,
+		echoCancellation: false,
+		noiseSuppression: false,
+		autoGainControl: false,
+		latencyHint: 'low',
+	    },
+	});
+	this._rawInputSourceNode =
+	      this._audioCtx.createMediaStreamSource(stream);
+
+	// new VUMeter(this.rawInputSource, document.body);
+	
+	this._rawInputSourceNode.connect(this.inputNode);
+	console.log(`Input device added: ${deviceId}`);
+	return;  // Explicit return so that `await` works.
+    }
+
+    async setAudioOutput(deviceId) {
+	if (!this._outputContext) {
+	    console.error("AudioContext or localOutputNode not initialized.");
+	    return;
+	}
+
+	if (!deviceId) {
+	    this.outputSink.disconnect(this._outputContext.destination);
+	} else {
+	    this.outputSink.connect(this._outputContext.destination);
+	}
+	
+	await this._outputContext.setSinkId(deviceId);
+	return;  // Explicit return so that `await` works.
+    }
+
+    async enumerateDevices() {
+	console.log('Scanning...');
+	const devices = await navigator.mediaDevices.enumerateDevices();
+	console.log('Enumerating...');
+	const inputDevices = devices.filter(
+	    device => device.kind === 'audioinput');
+	const outputDevices = devices.filter(
+	    device => device.kind === 'audiooutput');
+	this.inputDevices = inputDevices;
+	this.outputDevices = outputDevices;
+
+	console.log(`Inputs: ${inputDevices.length};`);
+	console.log(`Outputs: ${outputDevices.length}`);
+    }
+
+    inputSelector(div) {
+	console.log('Adding input device selector');
+	const inputList = document.createElement('span');
+	inputList.innerHTML = this.inputLabel;
+	div.appendChild(inputList);
+
+	const select = document.createElement('select');
+	select.name = 'inputDevice';
+	select.id = 'inputDeviceSelect';
+	inputList.appendChild(select);
+
+	{
+	    const option = document.createElement('option');
+	    option.value = '';
+	    option.text = 'None';
+	    select.appendChild(option);
+	}
+	
+	for (const device of this.inputDevices) {
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
+	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    await this.setAudioInput(select.value);
+	});
+    }
+
+    outputSelector(div) {
+	console.log('Adding output device selector');
+	const outputList = document.createElement('span');
+	outputList.innerHTML = this.outputLabel
+	div.appendChild(outputList);
+
+	const select = document.createElement('select');
+	select.name = 'outputDevice';
+	select.id = 'outputDeviceSelect';
+	outputList.appendChild(select);
+
+	{
+	    const option = document.createElement('option');
+	    option.value = '';
+	    option.text = 'None';
+	    select.appendChild(option);
+	}
+	
+	for (const device of this.outputDevices) {
+	    const option = document.createElement('option');
+	    option.value = device.deviceId;
+	    option.text = device.label || device.deviceId;
+	    select.appendChild(option);
+	}
+
+	select.addEventListener('change', async() => {
+	    console.log(`Value: ${select.value}`);
+	    await this.setAudioOutput(select.value);
+	});
+    }
+}
+
+```
+
 ```js audio.js
 class AudioManager extends EventTarget {
     constructor() {
 	super();
 	this.audioCtx = null;
-	this.localOutputNode = null;
 	this.localInputNode = null;
 
-	// Maps a device ID to the AudioNode for that device.
-	this.rawInputSources = new Map();
-	this.inputDevices = [];
-	this.outputDevices = [];
 	this.isRecording = false;
 	this.recordingBuffer = null;
 	this.samplesRecorded = 0;
+
+	this.localSelector = undefined;
+	this.dawSelector = undefined;
     }
     
     ctx() {
@@ -304,29 +886,30 @@ class AudioManager extends EventTarget {
 
     async initialize() {
 	this.audioCtx = new AudioContext();
-	this.localOutputNode = this.audioCtx.createGain();
-	this.localInputNode = this.audioCtx.createGain();
-
-
-	new VUMeter(this.localInputNode, document.body, 'mic');
-	this.localOutputVU = new VUMeter(
-	    this.localOutputNode, document.body, 'speakers');
-	this.localOutputNode.connect(this.audioCtx.destination);
-
-	await this.enumerateDevices();
-
 	const recordButton = document.getElementById('recordButton');
 	recordButton.addEventListener(
 	    'click', (event) => { this._toggleRecording(event); });
+
+	console.log('Creating input selectors.');
+	this.localSelector = new AudioDeviceSelector(
+	    document.getElementById('localIO'),
+	    "Audio Source (mic)", "Audio destination (headphones)",
+	    this.audioCtx);
+	await this.localSelector.initialize();
 
 	// Create a worklet recorder and add it to the graph.
 	await this.audioCtx.audioWorklet.addModule('worklet-recorder.js');
 	this.workletRecorderNode = new AudioWorkletNode(
 	    this.audioCtx, 'worklet-recorder');
-	this.localInputNode.connect(this.workletRecorderNode);
 	this.workletRecorderNode.port.onmessage = (event) => {
 	    this._processRecordingData(event.data);
 	}
+	this.localSelector.inputNode.connect(this.workletRecorderNode);
+	
+	this.dawSelector = new AudioDeviceSelector(
+	    document.getElementById('dawIO'),
+	    "DAW return", "DAW send", this.audioCtx);
+	await this.dawSelector.initialize();
     }
 
     _processRecordingData(data) {
@@ -362,153 +945,47 @@ class AudioManager extends EventTarget {
 	}
 	this.isRecording = !this.isRecording;
     }
-
-    async addAudioInput(deviceId) {
-	if (!this.rawInputSources.has(deviceId)) {
-	    const stream = await navigator.mediaDevices.getUserMedia({
-		audio: {
-		    deviceId: deviceId,
-		    echoCancellation: false,
-		    noiseSuppression: false,
-		    autoGainControl: false,
-		    latencyHint: 'low',
-		},
-	    });
-	    this.rawInputSources.set(
-		deviceId, this.audioCtx.createMediaStreamSource(stream));
-	}
-	// new VUMeter(this.rawInputSource, document.body);
-	
-	this.rawInputSources.get(deviceId).connect(this.localInputNode);
-	console.log(`Input device added: ${deviceId}`);
-	return;  // Explicit return so that `await` works.
-    }
-
-    async removeAudioInput(deviceId) {
-	if (this.rawInputSources.has(deviceId)) {
-	    this.rawInputSources.get(deviceId).disconnect();
-	}
-    }
-
-    async changeAudioOutput(deviceId) {
-	if (!this.audioCtx || !this.localOutputNode) {
-	    console.error("AudioContext or localOutputNode not initialized.");
-	    return;
-	}
-
-	await this.audioCtx.setSinkId(deviceId);
-	this.localOutputNode.connect(this.audioCtx.destination);
-	console.log(`Output device changed to: ${deviceId}`);
-	return;  // Explicit return so that `await` works.
-    }
-
-    async enumerateDevices() {
-	console.log('Scanning...');
-	const devices = await navigator.mediaDevices.enumerateDevices();
-	console.log('Enumerating...');
-	const inputDevices = devices.filter(
-	    device => device.kind === 'audioinput');
-	const outputDevices = devices.filter(
-	    device => device.kind === 'audiooutput' &&
-		device.deviceId !== 'default');
-	this.inputDevices = inputDevices;
-	this.outputDevices = outputDevices;
-
-	console.log(`Inputs: ${inputDevices.length};`);
-	console.log(`Outputs: ${outputDevices.length}`);
-    }
-
-    inputSelector(div) {
-	const inputList = document.createElement('span');
-	inputList.innerHTML = "Audio Source (mic): ";
-	div.appendChild(inputList);
-
-	const select = document.createElement('select');
-	select.name = 'inputDevice';
-	select.id = 'inputDeviceSelect';
-	inputList.appendChild(select);
-
-	for (const device of this.inputDevices) {
-	    const option = document.createElement('option');
-	    option.value = device.deviceId;
-	    option.text = device.label || device.deviceId;
-	    select.appendChild(option);
-	}
-
-	select.addEventListener('change', async() => {
-	    console.log(`Value: ${select.value}`);
-	    // Remove all existing inputs
-	    for (const device of this.rawInputSources.keys()) {
-		await this.removeAudioInput(device);
-	    }
-	    await this.addAudioInput(select.value);
-	});
-    }
-
-    outputSelector(div) {
-	const outputList = document.createElement('span');
-	outputList.innerHTML = "Audio destination (headphones):"
-	div.appendChild(outputList);
-
-	const select = document.createElement('select');
-	select.name = 'outputDevice';
-	select.id = 'outputDeviceSelect';
-	outputList.appendChild(select);
-
-	for (const device of this.outputDevices) {
-	    const option = document.createElement('option');
-	    option.value = device.deviceId;
-	    option.text = device.label || device.deviceId;
-	    select.appendChild(option);
-	}
-
-	select.addEventListener('change', async() => {
-	    console.log(`Value: ${select.value}`);
-	    await this.changeAudioOutput(select.value);
-	});
-    }
 }
 
 class GainController {
     constructor(inputNode, outputNode, inputPeerNode, outputPeerNode,
-		parentDiv) {
+		sendDawNode, returnDawNode) {
         this.inputNode = inputNode;
         this.outputNode = outputNode;
         this.inputPeerNode = inputPeerNode;
         this.outputPeerNode = outputPeerNode;
-        this.parentDiv = parentDiv;
+	this.sendDawNode = sendDawNode;
+	this.returnDawNode = returnDawNode;
+	
         this.audioContext = inputNode.context;
 
-	this.parentDiv.innerHTML = "<H1>Monitoring</H1>";
+	// First wire up the managed connections
+        const inputToOutputGain = this.audioContext.createGain();
+	this.inputNode.connect(inputToOutputGain);
+	inputToOutputGain.connect(this.outputNode);
+	this._wireCheckbox(document.getElementById('localMonitor'),
+		     inputToOutputGain);
 
-        this.inputToOutputGain = this.audioContext.createGain();
-        this.inputToPeerOutputGain = this.audioContext.createGain();
-        this.peerInputToOutputGain = this.audioContext.createGain();
-        this.peerInputToPeerOutputGain = this.audioContext.createGain();
+	const inputToDawSend = this.audioContext.createGain();
+	this.inputNode.connect(inputToDawSend);
+	inputToDawSend.connect(this.sendDawNode);
+	const peerToDawSend = this.audioContext.createGain();
+	this.inputPeerNode.connect(peerToDawSend);
+	peerToDawSend.connect(this.sendDawNode);
+	this._wireToggle(document.getElementById('dawSource'),
+			{peer: peerToDawSend,
+			 local: inputToDawSend});
 
-        this.inputNode.connect(this.inputToOutputGain);
-        this.inputToOutputGain.connect(this.outputNode);
+	const peerToOutput = this.audioContext.createGain();
+	this.inputPeerNode.connect(peerToOutput);
+	peerToOutput.connect(this.outputNode);
+	this._wireCheckbox(document.getElementById('peerMonitor'),
+			  peerToOutput);
 
-        this.inputNode.connect(this.inputToPeerOutputGain);
-        this.inputToPeerOutputGain.connect(this.outputPeerNode);
-
-        this.inputPeerNode.connect(this.peerInputToOutputGain);
-        this.peerInputToOutputGain.connect(this.outputNode);
-
-        this.inputPeerNode.connect(this.peerInputToPeerOutputGain);
-        this.peerInputToPeerOutputGain.connect(this.outputPeerNode);
-
-        this._createSlider("Input to Output Gain",
-			   this.inputToOutputGain, -30);
-        this._createSlider("Input to Peer Output Gain",
-			   this.inputToPeerOutputGain, 0);
-        this._createSlider("Peer Input to Output Gain",
-			   this.peerInputToOutputGain, 0);
-        this._createSlider("Peer Input to Peer Output Gain",
-			   this.peerInputToPeerOutputGain, -30);
-
-	new VUMeter(this.outputPeerNode, document.body, 'send');
-	new VUMeter(this.inputPeerNode, document.body, 'recieve');
+	// Wire all static connections
+	this.inputNode.connect(this.outputPeerNode);
+	this.returnDawNode.connect(this.outputPeerNode);
+	this.returnDawNode.connect(this.outputNode);
     }
 
     dbToGain(x) {
@@ -536,6 +1013,20 @@ class GainController {
         container.appendChild(label);
         container.appendChild(slider);
         this.parentDiv.appendChild(container);
+    }
+
+    _wireToggle(container, gains) {
+	container.addEventListener('change', (event) => {
+	    for (const key in gains) {
+		gains[key].gain.value = (key === event.target.value) ? 1 : 0;
+	    }
+	});
+    }
+
+    _wireCheckbox(checkbox, gainNode) {
+	checkbox.addEventListener('change', (event) => {
+	    gainNode.gain.value = event.target.checked ? 1 : 0;
+	});
     }
 }
 
@@ -649,16 +1140,16 @@ function audioBufferToWav(float32Buffer, audioCtx) {
 
 
 function floatTo16BitPCM(output, offset, input) {
-  for (let i = 0; i < input.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-  }
+    for (let i = 0; i < input.length; i++, offset += 2) {
+	const s = Math.max(-1, Math.min(1, input[i]));
+	output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
 }
 
 function writeString(view, offset, string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
+    for (let i = 0; i < string.length; i++) {
+	view.setUint8(offset + i, string.charCodeAt(i));
+    }
 }
 
 class AudioSnippet {
@@ -694,18 +1185,18 @@ class AudioSnippet {
 
     _play() {
 	// Play the buffer.
-	const audioCtx = this.audioManager.localOutputNode.context;
+	const audioCtx = this.audioManager.ctx();
 	const source = audioCtx.createBufferSource();
 	const audioBuffer = audioCtx.createBuffer(
 	    1, this.buffer.length, audioCtx.sampleRate);
 	audioBuffer.copyToChannel(this.buffer, 0);
 	source.buffer = audioBuffer;
-	source.connect(this.audioManager.localOutputNode);
+	source.connect(this.audioManager.localSelector.outputNode);
 	source.start();
     }
     
     _download() {
-	const audioCtx = this.audioManager.localOutputNode.context;
+	const audioCtx = this.audioManager.ctx();
 	const wavData = audioBufferToWav(this.buffer, audioCtx);
 	const blob = new Blob([wavData], { type: 'audio/wav' });
 	const url = URL.createObjectURL(blob);
@@ -728,68 +1219,75 @@ function _decodeFloat32Array(uint8Array) {
 }
 
 function start() {
+    console.log('Setting up start logic.');
     document.getElementById('startButton').addEventListener(
-	'click', async () => {
-	const audioDiv = document.getElementById('audioConfig');
-	audioDiv.innerHTML = '';
+	'click', async (event) => {
+	    console.log('Start clicked');
+	    const audioDiv = document.getElementById('audioConfig');
+	    event.target.remove();
 
-	const audioManager = new AudioManager();
-	await audioManager.initialize();
-	audioManager.inputSelector(audioDiv);
-	audioManager.outputSelector(audioDiv);
+	    const audioManager = new AudioManager();
+	    await audioManager.initialize();
+	    	    
+	    // Create a couple of nodes we will use to manage the
+	    // transient connections with our peer.
+	    const peerInputNode = audioManager.ctx().createGain();
+	    const peerOutputNode = audioManager.ctx().createGain();
 
-	// Create a couple of nodes we will use to manage the transient connections
-	// with our peer.
-	const peerInputNode = audioManager.ctx().createGain();
-	const peerOutputNode = audioManager.ctx().createGain();
+	    createTestToneButton(audioManager.localSelector.outputNode);
 
-	const gainControllerDiv = document.getElementById('gainController');
-	const gainController = new GainController(
-	    audioManager.localInputNode, audioManager.localOutputNode,
-	    peerInputNode, peerOutputNode,
-	    gainControllerDiv);
+	    const gainController = new GainController(
+		audioManager.localSelector.inputNode,
+		audioManager.localSelector.outputNode,
+		peerInputNode, peerOutputNode,
+		audioManager.dawSelector.outputNode,  // Send
+		audioManager.dawSelector.inputNode);  // Return
 
-	createTestToneButton(audioManager.localOutputNode);
+	    // Attempt to establish the peer connection.
+            const peerStatus = document.getElementById('peerStatus');
+	    const peerConnection = new PeerConnection(
+		"HelloTwinZ2", peerInputNode, peerOutputNode, peerStatus);
+	    
+	    peerConnection.addEventListener(
+		'peerStreamEstablished',
+		(event) => {
+		    console.log('Peer stream established in index.js');
+		});
 
-	// Attempt to establish the peer connection.
-	const peerStatus = document.getElementById('peerStatus');
-	const peerConnection = new PeerConnection(
-	    "HelloTwinZ2", peerInputNode, peerOutputNode);
-	
-	peerConnection.addEventListener('peerStreamEstablished', (event) => {
-            console.log('Peer stream established in index.js');
-	});
+	    const syncedDBMap =
+		  new SyncedDBMap('audioSnippets', peerConnection);
 
-	const syncedDBMap = new SyncedDBMap('audioSnippets', peerConnection);
+	    const audioSnippetsDiv = document.getElementById('audioSnippets');
+	    
+	    syncedDBMap.localMap.addEventListener(
+		'dataChanged',
+		(event) => {
+		    console.log('dataChanged event from DB');
+		    const float32Buffer =
+			  _decodeFloat32Array(event.detail.value.buffer);
+		    new AudioSnippet(
+			event.detail.key,
+			float32Buffer,
+			event.detail.value.numSamples,
+			event.detail.value.seconds,
+			audioManager,
+			audioSnippetsDiv);
+		});
+	    
+	    audioManager.addEventListener(
+		'recordingAvailable',
+		async (event) => {
+		    console.log(`Recording available ${event.detail.seconds}s`);
 
-	const audioSnippetsDiv = document.getElementById('audioSnippets');
-	
-	syncedDBMap.localMap.addEventListener('dataChanged', (event) => {
-	    console.log('dataChanged event from DB');
-	    const float32Buffer =
-		  _decodeFloat32Array(event.detail.value.buffer);
-	    new AudioSnippet(
-		event.detail.key,
-		float32Buffer,
-		event.detail.value.numSamples,
-		event.detail.value.seconds,
-		audioManager,
-		audioSnippetsDiv);
-	});
-	
-	audioManager.addEventListener('recordingAvailable', async (event) => {
-	    console.log(`Recording available ${event.detail.seconds}s`);
-
-	    const dbDetail = event.detail;
-	    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
-	    await syncedDBMap.set(
-		Date.now(), {
-		    ...dbDetail,
+		    const dbDetail = event.detail;
+		    dbDetail.buffer = _encodeFloat32Array(dbDetail.buffer);
+		    await syncedDBMap.set(
+			Date.now(), {
+			    ...dbDetail,
+			});
 		});
 	});
-    });
 }
-
 
 ```
 
@@ -1129,8 +1627,9 @@ customElements.define('mute-button', MuteButton);
 ```
 
 ```js peer-connection.js
+// peer-connection.js
 class PeerConnection extends EventTarget {
-    constructor(channelId, peerInputNode, peerOutputNode) {
+    constructor(channelId, peerInputNode, peerOutputNode, statusDiv) {
 	super();
 	this.channelId = channelId;
 	// Audio coming from the other peer to us
@@ -1146,6 +1645,7 @@ class PeerConnection extends EventTarget {
 	this.onDataReceived = null;
 	this.onConnectionError = null;
 	this.onConnectionClose = null;
+	this.statusDiv = statusDiv;
 
 	this._initialize(this.channelId);
 
@@ -1165,6 +1665,7 @@ class PeerConnection extends EventTarget {
     }
 
     connect(otherPeerId) {
+	this._updateStatus("Connecting...");
 	console.log('Connecting to peer...');
 	if (this.conn) {
 	    this.conn.close();
@@ -1180,9 +1681,11 @@ class PeerConnection extends EventTarget {
     
     async call(audioCtx, outgoingStreamDestination) {
 	return new Promise((resolve, reject) => {
-   	    const call = this.peer.call(this.otherId, outgoingStreamDestination.stream);
+   	    const call = this.peer.call(
+		this.otherId, outgoingStreamDestination.stream);
 	    call.on('error', (err) => { 
 		console.log(`Call error: ${err.message}`);
+		this._updateStatus(`Call error: ${err.message}`);
 	    });
 	    call.on('stream', (incomingStream) => {
 		console.log('Hack is here.');
@@ -1194,6 +1697,7 @@ class PeerConnection extends EventTarget {
 		    console.log('ready to flow'); });
 		// End ungodly hack.
 		console.log('Call stream');
+		this._updateStatus("Call established.");
 		resolve(audioCtx.createMediaStreamSource(incomingStream));
 	    });
 	});
@@ -1209,15 +1713,36 @@ class PeerConnection extends EventTarget {
 
 	this.conn.on('close', () => {
 	    console.log('Connection closed');
-	    console.log(
-		'TODO: if we are the peer, we need to start init again.');
+	    this._updateStatus("Connection closed.");
+	    // this._reset();
 	});
-	this.conn.on('error', (err) => console.log('Connection error: ', err));
+	this.conn.on('error', (err) => {
+	    console.log('Connection error: ', err);
+	    this._updateStatus(`Connection error: ${err}`);
+	});
+    }
+
+    async _reset() {
+	console.log('Resetting peer connection.');
+	this._updateStatus("Resetting connection...");
+	if (this.conn) {
+	    this.conn.close();
+	    this.conn = null;
+	}
+	this.otherId = undefined;
+	// Re-initialize the peer, which will create a new peer ID.
+	this._initialize(this.channelId);
+    }
+
+    _updateStatus(status) {
+	this.statusDiv.textContent = `Status: ${status}`;
     }
     
     
     _initialize(channelId) {
+	this._updateStatus("Initializing...");
 	// Ensure that peerId is set properly
+	this._updateStatus("Initializing peer...");
 	this.peer = new Peer(channelId);
 	this.peer.on('open', this._onPeerOpen.bind(this));
 	this.peer.on('connection', this._onPeerConnection.bind(this));
@@ -1231,9 +1756,11 @@ class PeerConnection extends EventTarget {
     async _onPeerOpen(id) {
 	console.log(`Peer open: ${id}`);
 	this.peerId = id; // Set peerId when the peer is opened
+	this._updateStatus(`Peer ID: ${id}`);
 	if (this.channelId === this.peerId) {
 	    console.log('I am server');
 	    this.otherId = id;
+	    // The server doesn't try to join.
 	} else {
 	    console.log('I am client');
 	    this.otherId = this.channelId;
@@ -1247,6 +1774,7 @@ class PeerConnection extends EventTarget {
 
     _onPeerConnection(c) {
 	console.log(`Peer connection. Other: ${c.peer}`);
+	this._updateStatus(`Peer connected to: ${c.peer}`);
 	this.otherId = c.peer;
 	this.conn = c;
 	this._addConnHandlers();
@@ -1254,25 +1782,30 @@ class PeerConnection extends EventTarget {
 
     _onPeerDisconnected() {
 	console.log('Peer disconnected');
+	this._updateStatus("Peer disconnected.");
     }
 
     _onPeerClose() {
 	console.log('Peer close');
+	this._updateStatus("Peer closed.");
     }
 
     _onPeerError(err) {
 	console.log(`Peer error`);
 	console.log(err);
+	this._updateStatus(`Peer error: ${err.message}`);
 	if (err.message === `ID "${this.channelId}" is taken`) {
-	    // Handle error logic (e.g., re-initialize or retry connection)
+	    // We are the client, so reinitialize with 'null'.
 	    this._initialize(null);
 	}
     }
 
     _onPeerCall(mediaConnection) {
 	console.log(`Peer call from ${mediaConnection.peer}`);
+	this._updateStatus(`Peer call from: ${mediaConnection.peer}`);
 	if (mediaConnection.peer == this.peer.id) {
 	    console.log('Self call.  Ignore.');
+	    this._updateStatus("Self call.  Ignored.");
 	}
 	const audioCtx = this.peerOutputNode.context;
 	const outgoingStream =
@@ -1287,6 +1820,7 @@ class PeerConnection extends EventTarget {
 
     _handleIncomingStream(incomingStream) {
 	console.log('Stream Received');
+	this._updateStatus("Stream received.");
 	// Ideally, we want to disconnect anything coming into the
 	// peerInputNode
 	//if (this.peerInputNode) {
@@ -1309,6 +1843,7 @@ class PeerConnection extends EventTarget {
 
     async _join() {
 	console.log('join');
+	this._updateStatus("Joining peer...");
 	if (this.conn) {
 	    this.conn.close();
 	}
@@ -1332,6 +1867,7 @@ class PeerConnection extends EventTarget {
 		console.log('ready to flow'); });
 	    // End ungodly hack.
 	    console.log('Got callee stream.');
+	    this._updateStatus("Receiving audio stream from peer.");
 	    const peerSourceStream =
 		  audioCtx.createMediaStreamSource(incomingStream);
 	    peerSourceStream.connect(this.peerInputNode);
