@@ -1,5 +1,6 @@
+// peer-connection.js
 class PeerConnection extends EventTarget {
-    constructor(channelId, peerInputNode, peerOutputNode) {
+    constructor(channelId, peerInputNode, peerOutputNode, statusDiv) {
 	super();
 	this.channelId = channelId;
 	// Audio coming from the other peer to us
@@ -15,6 +16,7 @@ class PeerConnection extends EventTarget {
 	this.onDataReceived = null;
 	this.onConnectionError = null;
 	this.onConnectionClose = null;
+	this.statusDiv = statusDiv;
 
 	this._initialize(this.channelId);
 
@@ -34,6 +36,7 @@ class PeerConnection extends EventTarget {
     }
 
     connect(otherPeerId) {
+	this._updateStatus("Connecting...");
 	console.log('Connecting to peer...');
 	if (this.conn) {
 	    this.conn.close();
@@ -49,9 +52,11 @@ class PeerConnection extends EventTarget {
     
     async call(audioCtx, outgoingStreamDestination) {
 	return new Promise((resolve, reject) => {
-   	    const call = this.peer.call(this.otherId, outgoingStreamDestination.stream);
+   	    const call = this.peer.call(
+		this.otherId, outgoingStreamDestination.stream);
 	    call.on('error', (err) => { 
 		console.log(`Call error: ${err.message}`);
+		this._updateStatus(`Call error: ${err.message}`);
 	    });
 	    call.on('stream', (incomingStream) => {
 		console.log('Hack is here.');
@@ -63,6 +68,7 @@ class PeerConnection extends EventTarget {
 		    console.log('ready to flow'); });
 		// End ungodly hack.
 		console.log('Call stream');
+		this._updateStatus("Call established.");
 		resolve(audioCtx.createMediaStreamSource(incomingStream));
 	    });
 	});
@@ -78,15 +84,36 @@ class PeerConnection extends EventTarget {
 
 	this.conn.on('close', () => {
 	    console.log('Connection closed');
-	    console.log(
-		'TODO: if we are the peer, we need to start init again.');
+	    this._updateStatus("Connection closed.");
+	    // this._reset();
 	});
-	this.conn.on('error', (err) => console.log('Connection error: ', err));
+	this.conn.on('error', (err) => {
+	    console.log('Connection error: ', err);
+	    this._updateStatus(`Connection error: ${err}`);
+	});
+    }
+
+    async _reset() {
+	console.log('Resetting peer connection.');
+	this._updateStatus("Resetting connection...");
+	if (this.conn) {
+	    this.conn.close();
+	    this.conn = null;
+	}
+	this.otherId = undefined;
+	// Re-initialize the peer, which will create a new peer ID.
+	this._initialize(this.channelId);
+    }
+
+    _updateStatus(status) {
+	this.statusDiv.textContent = `Status: ${status}`;
     }
     
     
     _initialize(channelId) {
+	this._updateStatus("Initializing...");
 	// Ensure that peerId is set properly
+	this._updateStatus("Initializing peer...");
 	this.peer = new Peer(channelId);
 	this.peer.on('open', this._onPeerOpen.bind(this));
 	this.peer.on('connection', this._onPeerConnection.bind(this));
@@ -100,9 +127,11 @@ class PeerConnection extends EventTarget {
     async _onPeerOpen(id) {
 	console.log(`Peer open: ${id}`);
 	this.peerId = id; // Set peerId when the peer is opened
+	this._updateStatus(`Peer ID: ${id}`);
 	if (this.channelId === this.peerId) {
 	    console.log('I am server');
 	    this.otherId = id;
+	    // The server doesn't try to join.
 	} else {
 	    console.log('I am client');
 	    this.otherId = this.channelId;
@@ -116,6 +145,7 @@ class PeerConnection extends EventTarget {
 
     _onPeerConnection(c) {
 	console.log(`Peer connection. Other: ${c.peer}`);
+	this._updateStatus(`Peer connected to: ${c.peer}`);
 	this.otherId = c.peer;
 	this.conn = c;
 	this._addConnHandlers();
@@ -123,25 +153,30 @@ class PeerConnection extends EventTarget {
 
     _onPeerDisconnected() {
 	console.log('Peer disconnected');
+	this._updateStatus("Peer disconnected.");
     }
 
     _onPeerClose() {
 	console.log('Peer close');
+	this._updateStatus("Peer closed.");
     }
 
     _onPeerError(err) {
 	console.log(`Peer error`);
 	console.log(err);
+	this._updateStatus(`Peer error: ${err.message}`);
 	if (err.message === `ID "${this.channelId}" is taken`) {
-	    // Handle error logic (e.g., re-initialize or retry connection)
+	    // We are the client, so reinitialize with 'null'.
 	    this._initialize(null);
 	}
     }
 
     _onPeerCall(mediaConnection) {
 	console.log(`Peer call from ${mediaConnection.peer}`);
+	this._updateStatus(`Peer call from: ${mediaConnection.peer}`);
 	if (mediaConnection.peer == this.peer.id) {
 	    console.log('Self call.  Ignore.');
+	    this._updateStatus("Self call.  Ignored.");
 	}
 	const audioCtx = this.peerOutputNode.context;
 	const outgoingStream =
@@ -156,6 +191,7 @@ class PeerConnection extends EventTarget {
 
     _handleIncomingStream(incomingStream) {
 	console.log('Stream Received');
+	this._updateStatus("Stream received.");
 	// Ideally, we want to disconnect anything coming into the
 	// peerInputNode
 	//if (this.peerInputNode) {
@@ -178,6 +214,7 @@ class PeerConnection extends EventTarget {
 
     async _join() {
 	console.log('join');
+	this._updateStatus("Joining peer...");
 	if (this.conn) {
 	    this.conn.close();
 	}
@@ -201,6 +238,7 @@ class PeerConnection extends EventTarget {
 		console.log('ready to flow'); });
 	    // End ungodly hack.
 	    console.log('Got callee stream.');
+	    this._updateStatus("Receiving audio stream from peer.");
 	    const peerSourceStream =
 		  audioCtx.createMediaStreamSource(incomingStream);
 	    peerSourceStream.connect(this.peerInputNode);

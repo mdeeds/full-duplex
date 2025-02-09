@@ -167,9 +167,9 @@ function start() {
 		audioManager.dawSelector.outputNode);
 
 	    // Attempt to establish the peer connection.
-	    const peerStatus = document.getElementById('peerStatus');
+            const peerStatus = document.getElementById('peerStatus');
 	    const peerConnection = new PeerConnection(
-		"HelloTwinZ2", peerInputNode, peerOutputNode);
+		"HelloTwinZ2", peerInputNode, peerOutputNode, peerStatus);
 	    
 	    peerConnection.addEventListener(
 		'peerStreamEstablished',
